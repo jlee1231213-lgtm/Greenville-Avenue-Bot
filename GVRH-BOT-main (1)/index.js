@@ -1,12 +1,3 @@
-// Startup directory check
-const expectedDir = __dirname;
-if (process.cwd() !== expectedDir) {
-    console.error('[ERROR] Please start the bot from the directory:', expectedDir);
-    console.error('Current working directory:', process.cwd());
-    console.error('Use: cd', expectedDir, '&& node index.js');
-    process.exit(1);
-}
-
 require('dotenv').config();
 const mongoose = require('mongoose');
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
