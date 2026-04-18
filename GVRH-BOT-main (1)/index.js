@@ -32,7 +32,7 @@ mongoose.connection.on('error', (err) => {
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 
-const slashCommandsPath = path.join(__dirname, 'commands', 'slash');
+const slashCommandsPath = path.join(__dirname, 'commands');
 
 const siblingCommandsPath = path.join(__dirname, '..', 'commands');
 if (fs.existsSync(siblingCommandsPath)) {
