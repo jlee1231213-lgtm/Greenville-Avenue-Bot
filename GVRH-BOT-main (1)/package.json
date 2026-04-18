@@ -1,0 +1,19 @@
+{
+  "name": "greenville-avenue-bot",
+  "version": "1.0.0",
+  "description": "Discord bot",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js"
+  },
+  "dependencies": {
+    "@fluxbot/discord-html-transcripts": "^3.4.2",
+    "axios": "^1.14.0",
+    "discord.js": "^14.13.0",
+    "dotenv": "^16.6.1",
+    "mongodb": "3.6",
+    "mongoose": "^9.4.1",
+    "uuid": "^13.0.0"
+  }
+}
