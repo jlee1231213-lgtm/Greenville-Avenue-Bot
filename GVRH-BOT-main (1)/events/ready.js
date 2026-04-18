@@ -2,6 +2,21 @@ const fs = require('fs');
 const path = require('path');
 const { REST, Routes } = require('discord.js');
 
+function findSlashCommandsPath() {
+    const candidates = [
+        path.join(__dirname, '..', 'commands', 'slash'),
+        path.join(__dirname, '..', 'commands (1)', 'slash'),
+    ];
+
+    for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+
+    throw new Error(`No slash commands folder found. Checked: ${candidates.join(', ')}`);
+}
+
 async function deployGuildCommands(client) {
     if (!process.env.TOKEN || !process.env.GUILD_ID) {
         console.warn('[WARN] Testing mode is enabled, but TOKEN or GUILD_ID is missing. Skipping command deploy.');
@@ -9,7 +24,7 @@ async function deployGuildCommands(client) {
     }
 
     const commands = [];
-    const slashPath = path.join(__dirname, '..', 'commands', 'slash');
+    const slashPath = findSlashCommandsPath();
     const commandFiles = fs.readdirSync(slashPath).filter(file => file.endsWith('.js'));
 
     for (const file of commandFiles) {

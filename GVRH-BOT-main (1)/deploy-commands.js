@@ -4,7 +4,22 @@ const { REST, Routes } = require('discord.js');
 require('dotenv').config();
 
 const commands = [];
-const commandsPath = path.join(__dirname, 'commands');
+function findSlashCommandsPath() {
+    const candidates = [
+        path.join(__dirname, 'commands', 'slash'),
+        path.join(__dirname, 'commands (1)', 'slash'),
+    ];
+
+    for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+
+    throw new Error(`No slash commands folder found. Checked: ${candidates.join(', ')}`);
+}
+
+const commandsPath = findSlashCommandsPath();
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {

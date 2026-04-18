@@ -32,12 +32,23 @@ mongoose.connection.on('error', (err) => {
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 
-const slashCommandsPath = path.join(__dirname, 'commands', 'slash');
-const siblingCommandsPath = path.join(__dirname, '..', 'commands');
-if (fs.existsSync(siblingCommandsPath)) {
-    console.warn('[WARN] Detected sibling commands folder at', siblingCommandsPath);
-    console.warn('[WARN] This bot uses', slashCommandsPath, 'for slash command loading and ignores the sibling folder.');
+function findSlashCommandsPath() {
+    const candidates = [
+        path.join(__dirname, 'commands', 'slash'),
+        path.join(__dirname, 'commands (1)', 'slash'),
+    ];
+
+    for (const candidate of candidates) {
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+
+    throw new Error(`No slash commands folder found. Checked: ${candidates.join(', ')}`);
 }
+
+const slashCommandsPath = findSlashCommandsPath();
+console.log('[INFO] Loading slash commands from', slashCommandsPath);
 
 // Commands
 client.commands = new Collection();
