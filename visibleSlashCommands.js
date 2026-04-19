@@ -19,6 +19,8 @@ const VISIBLE_SLASH_COMMANDS = new Set([
     'payticket',
     'work',
     'balance',
+    'deposit',
+    'withdraw',
 ]);
 
 function isVisibleSlashCommand(commandName) {

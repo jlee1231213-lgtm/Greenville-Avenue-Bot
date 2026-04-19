@@ -25,7 +25,7 @@ module.exports = {
             const bank = userEco.bank || 0;
             const total = cash + bank;
             const embed = new EmbedBuilder()
-                .setColor("#ffff00")
+                .setColor("#FFD700")
                 .setTitle(`${targetUser.username}'s Balance`)
                 .addFields(
                     { name: '💰 Cash', value: `$${cash.toLocaleString()}`, inline: true },
