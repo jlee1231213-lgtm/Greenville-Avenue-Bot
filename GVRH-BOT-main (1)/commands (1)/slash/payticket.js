@@ -17,20 +17,49 @@ module.exports = {
     const userId = interaction.user.id;
     const guildId = interaction.guild.id;
     const ticketId = interaction.options.getString('ticket');
-    const ticket = await Ticket.findById(ticketId);
-    const settings = await Settings.findOne({ guildId });
-    const embedColor = settings?.embedcolor || "#ffffff";
 
-    if (!ticket) return interaction.reply({ embeds: [new EmbedBuilder().setColor(embedColor).setDescription('Ticket not found.')], ephemeral: true });
-    if (ticket.UserID !== userId) return interaction.reply({ embeds: [new EmbedBuilder().setColor(embedColor).setDescription('This ticket is not yours.')], ephemeral: true });
+    await interaction.deferReply({ ephemeral: true });
+
+    const settings = await Settings.findOne({ guildId });
+    const embedColor = settings?.embedcolor || '#ffffff';
+
+    const replyWith = (description) =>
+      interaction.editReply({
+        embeds: [new EmbedBuilder().setColor(embedColor).setDescription(description)],
+      });
+
+    let ticket;
+    try {
+      ticket = await Ticket.findOne({ _id: ticketId, UserID: userId });
+    } catch (error) {
+      return replyWith('That ticket selection is invalid. Please choose the ticket from the autocomplete list and try again.');
+    }
+
+    if (!ticket) {
+      return replyWith('Ticket not found, already paid, or not assigned to you.');
+    }
+
+    const ticketPrice = Number(ticket.Price) || 0;
+    if (ticketPrice <= 0) {
+      return replyWith('This ticket has an invalid price and cannot be paid right now. Please contact staff.');
+    }
 
     let userEco = await Eco.findOne({ userId });
-    if (!userEco) return interaction.reply({ embeds: [new EmbedBuilder().setColor(embedColor).setDescription('You have no money to pay this ticket.')], ephemeral: true });
+    if (!userEco) {
+      return replyWith('You have no money to pay this ticket.');
+    }
 
-    let totalBalance = userEco.cash + userEco.bank;
-    if (totalBalance < ticket.Price) return interaction.reply({ embeds: [new EmbedBuilder().setColor(embedColor).setDescription(`You do not have enough funds to pay this ticket. Amount needed: $${ticket.Price}`)], ephemeral: true });
+    const bankBalance = Number(userEco.bank) || 0;
+    const cashBalance = Number(userEco.cash) || 0;
+    const totalBalance = bankBalance + cashBalance;
 
-    let remaining = ticket.Price;
+    if (totalBalance < ticketPrice) {
+      return replyWith(`You do not have enough funds to pay this ticket. Amount needed: $${ticketPrice}`);
+    }
+
+    let remaining = ticketPrice;
+    userEco.bank = bankBalance;
+    userEco.cash = cashBalance;
 
     if (userEco.bank >= remaining) {
       userEco.bank -= remaining;
@@ -49,9 +78,9 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setTitle('Ticket Paid')
-      .setDescription(`You have successfully paid the ticket.\n**Offense:** ${ticket.Offense}\n**Amount Paid:** $${ticket.Price}`)
+      .setDescription(`You have successfully paid the ticket.\n**Offense:** ${ticket.Offense}\n**Amount Paid:** $${ticketPrice}`)
       .setColor(embedColor);
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.editReply({ embeds: [embed] });
   }
 };
