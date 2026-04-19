@@ -54,6 +54,11 @@ module.exports = {
     name: 'clientReady',
     once: true,
     async execute(client) {
+        const desiredBotDescription = `The Greenville Avenue Bot is a multiskilled bot made for GVA. Owned By <@1418164851498287144>
+
+Fully coded by <@1056593980411879455> and fully designed by <@1128654537478119487>
+
+https://discord.gg/PCkUk7X28c`;
         const desiredBotName = process.env.BOT_NAME?.trim();
         if (desiredBotName && client.user.username !== desiredBotName) {
             try {
@@ -61,6 +66,18 @@ module.exports = {
                 console.log(`[INFO] Updated bot username to: ${desiredBotName}`);
             } catch (error) {
                 console.warn('[WARN] Could not update bot username (possible Discord rate limit):', error?.message || error);
+            }
+        }
+
+        if (client.application) {
+            try {
+                await client.application.fetch();
+                if (client.application.description !== desiredBotDescription) {
+                    await client.application.edit({ description: desiredBotDescription });
+                    console.log('[INFO] Updated bot description.');
+                }
+            } catch (error) {
+                console.warn('[WARN] Could not update bot description:', error?.message || error);
             }
         }
 
