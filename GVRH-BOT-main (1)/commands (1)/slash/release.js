@@ -3,6 +3,23 @@ const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
+const DEFAULT_RELEASE_TEMPLATE = {
+  title: '<:gvi_confetti:1493952437642461254> **__Greenville Avenue — Session Re-Invites__**',
+  description: `<:green_arrow_recolor:1489356754570580069> Re-invitations for this roleplay session have now been issued by the session host. Individuals who were previously unable to join or were placed on hold may now re-enter the session.
+
+Session Details:
+
+- Host: $user
+- FRP Speed Limit: $frplimit
+- Peacetime Status: $pt
+- Law Enforcement Availability: $leo
+
+<:bell_tts:1489640619318968531> Please note: Any participant who was previously removed from the session is not permitted to rejoin unless explicitly authorized by the session host.
+
+-# <:green_arrow_recolor:1489356754570580069>  We appreciate your cooperation and look forward to maintaining a structured and immersive roleplay environment.`,
+  image: 'https://media.discordapp.net/attachments/1450473391134871565/1489434331242958859/Screenshot_20260402_213906.jpg?ex=69e4d690&is=69e38510&hm=c38a5a38bf5f290d26352d6e24c288aa55f06bf19f9d2a34414d95b0ecf9db51&=&format=webp&width=2160&height=1056',
+};
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("release")
@@ -62,18 +79,18 @@ module.exports = {
     const frpLimit = interaction.options.getString('frplimit');
     const leoStatus = interaction.options.getString('leo');
 
-    const releaseTemplate = settings?.releaseEmbed || {};
+    const releaseTemplate = {
+      ...DEFAULT_RELEASE_TEMPLATE,
+      ...(settings?.releaseEmbed || {}),
+    };
     const embed = new EmbedBuilder()
-      .setTitle(releaseTemplate.title || "Data not found")
+      .setTitle(releaseTemplate.title)
       .setDescription(
-        (releaseTemplate.description || "Release embed data was not found. Please use /settings to configure the Embed.")
+        releaseTemplate.description
           .replace(/\$user/g, `<@${interaction.user.id}>`)
           .replace(/\$pt/g, ptStatus)
           .replace(/\$frplimit/g, frpLimit)
           .replace(/\$leo/g, leoStatus)
-      )
-      .addFields(
-        { name: 'LEO Status', value: leoStatus, inline: true }
       )
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
