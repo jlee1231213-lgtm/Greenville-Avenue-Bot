@@ -65,7 +65,7 @@ module.exports = {
         }
 
         console.log(`Bot is online as ${client.user.tag}`);
-        client.user.setPresence({ activities: [{ name: 'Greenville Avenue' }], status: 'dnd' });
+        client.user.setPresence({ activities: [{ name: 'Greenville Avenue' }], status: 'online' });
 
         const testingMode = process.env.TESTING_MODE !== 'false';
         if (testingMode) {
