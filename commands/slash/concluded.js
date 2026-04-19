@@ -1,4 +1,5 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const Settings = require('../../models/settings');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -29,6 +30,8 @@ module.exports = {
                 .setRequired(false)
         ),
     async execute(interaction) {
+        const settings = await Settings.findOne({ guildId: interaction.guild.id });
+        const embedColor = settings?.embedcolor || '#ab6cc4';
         const imageUrl = 'https://media.discordapp.net/attachments/1450473391134871565/1492956124092039329/Screenshot_20260402_214940.jpg?ex=69dd373d&is=69dbe5bd&hm=9b392661e3f7da0bd7a522875f0d5adccf36e613e5d6f834fc04c81ffdb977b3&=&format=webp&width=2160&height=1046';
         const host = interaction.user;
         const startTime = interaction.options.getString('start_time');
@@ -36,19 +39,21 @@ module.exports = {
         const duration = interaction.options.getString('duration');
         const notes = interaction.options.getString('notes') || 'No notes provided.';
 
-        const content = [
-            `<:gvry_ydot:1489356230785761382> Thank you for joining the session hosted by <@${host.id}>, we hope you had an enjoyable experience throughout the session!`,
-            '',
-            '<:green_arrow_recolor:1489356754570580069>**| Session Information**',
-            `-# <:gvry_ydot:1489356230785761382> **Host:** <@${host.id}>`,
-            `-# <:gvry_ydot:1489356230785761382> **Start Time:** ${startTime}`,
-            `-# <:gvry_ydot:1489356230785761382> **End Time:** ${endTime}`,
-            `-# <:gvry_ydot:1489356230785761382> **Duration:** \`${duration}\``,
-            `-# <:gvry_ydot:1489356230785761382> **Notes:** ${notes}`,
-            '',
-            imageUrl
-        ].join('\n');
+        const embed = new EmbedBuilder()
+            .setColor(embedColor)
+            .setDescription([
+                `<:gvry_ydot:1489356230785761382> Thank you for joining the session hosted by <@${host.id}>, we hope you had an enjoyable experience throughout the session!`,
+                '',
+                '<:green_arrow_recolor:1489356754570580069>**| Session Information**',
+                `-# <:gvry_ydot:1489356230785761382> **Host:** <@${host.id}>`,
+                `-# <:gvry_ydot:1489356230785761382> **Start Time:** ${startTime}`,
+                `-# <:gvry_ydot:1489356230785761382> **End Time:** ${endTime}`,
+                `-# <:gvry_ydot:1489356230785761382> **Duration:** \`${duration}\``,
+                `-# <:gvry_ydot:1489356230785761382> **Notes:** ${notes}`
+            ].join('\n'))
+            .setImage(imageUrl)
+            .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-        await interaction.reply({ content });
+        await interaction.reply({ embeds: [embed] });
     },
 };
