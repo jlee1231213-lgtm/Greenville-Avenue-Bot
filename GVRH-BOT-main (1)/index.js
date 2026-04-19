@@ -1,8 +1,8 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mongoose = require('mongoose');
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
-const path = require('path');
 
 mongoose.set('bufferCommands', false);
 

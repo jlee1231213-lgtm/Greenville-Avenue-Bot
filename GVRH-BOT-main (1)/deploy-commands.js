@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { REST, Routes } = require('discord.js');
 const { isVisibleSlashCommand } = require('./visibleSlashCommands');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const commands = [];
 function findSlashCommandsPath() {
