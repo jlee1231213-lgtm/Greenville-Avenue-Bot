@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { REST, Routes } = require('discord.js');
+const { isVisibleSlashCommand } = require('./visibleSlashCommands');
 require('dotenv').config();
 
 const commands = [];
@@ -25,8 +26,8 @@ const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('
 for (const file of commandFiles) {
     const command = require(path.join(commandsPath, file));
 
-    // Only register slash commands that have data + execute
-    if (command.data && command.data.toJSON) {
+    // Only register slash commands that should appear in Discord's slash menu.
+    if (command.data && command.data.toJSON && isVisibleSlashCommand(command.data.name)) {
         commands.push(command.data.toJSON());
     }
 }

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { REST, Routes } = require('discord.js');
+const { isVisibleSlashCommand } = require('../visibleSlashCommands');
 
 function findSlashCommandsPath() {
     const candidates = [
@@ -29,7 +30,7 @@ async function deployGuildCommands(client) {
 
     for (const file of commandFiles) {
         const command = require(path.join(slashPath, file));
-        if (command?.data?.name) {
+        if (command?.data?.name && isVisibleSlashCommand(command.data.name)) {
             commands.push(command.data.toJSON());
         }
     }
