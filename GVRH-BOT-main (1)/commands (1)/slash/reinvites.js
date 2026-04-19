@@ -69,8 +69,10 @@ module.exports = {
     const settings = await Settings.findOne({ guildId: interaction.guild.id });
     const embedColor = settings?.embedcolor || '#7545B0';
 
+    await interaction.deferReply({ ephemeral: true });
+
     if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId)) {
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           new EmbedBuilder()
             .setTitle('Data not found')
@@ -117,7 +119,7 @@ module.exports = {
     const row = new ActionRowBuilder().addComponents(button);
 
     const reinviteMessage = await interaction.channel.send({ content: '@here', embeds: [embed], components: [row] });
-    await interaction.reply({ content: 'Reinvites sent successfully.', ephemeral: true });
+    await interaction.deleteReply().catch(() => {});
 
     const collector = reinviteMessage.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3600000 });
 
