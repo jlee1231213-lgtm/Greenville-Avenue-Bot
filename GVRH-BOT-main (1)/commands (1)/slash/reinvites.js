@@ -112,7 +112,7 @@ module.exports = {
     const button = new ButtonBuilder()
       .setCustomId('reinvites_link')
       .setLabel('Get Session Link')
-      .setStyle(ButtonStyle.Primary);
+      .setStyle(ButtonStyle.Success);
 
     const row = new ActionRowBuilder().addComponents(button);
 

@@ -119,7 +119,6 @@ module.exports = {
                                     { label: 'Cohost Embed', value: 'cohostEmbed' },
                                     { label: 'Ticket Support Panel', value: 'ticketSupportEmbed' },
                                     { label: 'Release Embed', value: 'releaseEmbed' },
-                                    { label: 'Reinvites Embed', value: 'reinvitesEmbed' },
                                     { label: 'Over Embed', value: 'overEmbed' },
                                 ])
                         );
@@ -202,7 +201,7 @@ module.exports = {
                 return interaction.showModal(modal);
             }
 
-            const embedFields = ['startupEmbed','eaEmbed','giveawayEmbed','setupEmbed','welcomeEmbed','cohostEmbed','cohostendEmbed','ticketSupportEmbed','releaseEmbed','reinvitesEmbed','overEmbed'];
+            const embedFields = ['startupEmbed','eaEmbed','giveawayEmbed','setupEmbed','welcomeEmbed','cohostEmbed','cohostendEmbed','ticketSupportEmbed','releaseEmbed','overEmbed'];
             if (embedFields.includes(interaction.values[0])) {
                 const field = interaction.values[0];
                 const currentEmbed = settings?.[field] || {};
