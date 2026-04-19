@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const StartupSession = require(path.join(__dirname, '../../models/startupsession'));
 const Settings = require('../../models/settings');
+const { DEFAULT_STARTUP_EMBED } = require('../../utils/defaultEmbeds');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 const activeStartupSessions = new Map();
@@ -30,10 +31,7 @@ module.exports = {
           guildId: interaction.guild.id,
           embedcolor: '#ab6cc4',
           staffRoleId: null,
-          startupEmbed: {
-            title: 'Startup Session Started by $user',
-            description: 'React with ✅ to join the session!'
-          },
+          startupEmbed: DEFAULT_STARTUP_EMBED,
           setupEmbed: {}
         });
       } catch (error) {
@@ -49,7 +47,9 @@ module.exports = {
     const userId = interaction.user.id;
     const now = new Date();
     const embedColor = settings.embedcolor || '#ab6cc4';
-    const startupTemplate = settings.startupEmbed || {};
+    const startupTemplate = settings.startupEmbed?.title || settings.startupEmbed?.description || settings.startupEmbed?.image
+      ? settings.startupEmbed
+      : DEFAULT_STARTUP_EMBED;
     const setupTemplate = settings.setupEmbed || {};
 
     const embed = new EmbedBuilder()
