@@ -24,11 +24,6 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("reinvites")
     .setDescription("Post reinvites for a session")
-    .addUserOption(option =>
-      option.setName("host")
-        .setDescription("The host for this session")
-        .setRequired(true)
-    )
     .addStringOption(option =>
       option.setName("link")
         .setDescription("The private server link")
@@ -88,7 +83,7 @@ module.exports = {
     const currentCount = (interaction.client.reinviteCounters.get(channelId) || 0) + 1;
     interaction.client.reinviteCounters.set(channelId, currentCount);
 
-    const hostUser = interaction.options.getUser('host');
+    const hostUser = interaction.user;
     const sessionLink = interaction.options.getString('link');
     const ptStatus = interaction.options.getString('peacetime');
     const frpLimit = interaction.options.getString('frplimit');

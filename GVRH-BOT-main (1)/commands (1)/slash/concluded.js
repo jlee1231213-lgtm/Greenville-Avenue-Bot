@@ -4,12 +4,6 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('concluded')
         .setDescription('Send a concluded session message')
-        .addUserOption(option =>
-            option
-                .setName('host')
-                .setDescription('Who hosted the session?')
-                .setRequired(true)
-        )
         .addStringOption(option =>
             option
                 .setName('start_time')
@@ -36,7 +30,7 @@ module.exports = {
         ),
     async execute(interaction) {
         const imageUrl = 'https://media.discordapp.net/attachments/1450473391134871565/1492956124092039329/Screenshot_20260402_214940.jpg?ex=69dd373d&is=69dbe5bd&hm=9b392661e3f7da0bd7a522875f0d5adccf36e613e5d6f834fc04c81ffdb977b3&=&format=webp&width=2160&height=1046';
-        const host = interaction.options.getUser('host');
+        const host = interaction.user;
         const startTime = interaction.options.getString('start_time');
         const endTime = interaction.options.getString('end_time');
         const duration = interaction.options.getString('duration');
