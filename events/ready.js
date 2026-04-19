@@ -54,11 +54,10 @@ module.exports = {
     name: 'clientReady',
     once: true,
     async execute(client) {
-        const desiredBotDescription = `The Greenville Avenue Bot is a multiskilled bot made for GVA. Owned By <@1418164851498287144>
+        const desiredBotDescription = `Introducing the Greenville Avenue Bot, a multipurpose bot made especially for GVA.
+*Owned by kosmote_21 & f80q, Developed by pnkstrz_._ & Designed by f80q*
 
-Fully coded by <@1056593980411879455> and fully designed by <@1128654537478119487>
-
-https://discord.gg/PCkUk7X28c`;
+[Greenville Avenue™](https://discord.gg/PCkUk7X28c)`;
         const desiredBotName = process.env.BOT_NAME?.trim();
         if (desiredBotName && client.user.username !== desiredBotName) {
             try {
