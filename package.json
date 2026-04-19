@@ -1,8 +1,7 @@
 {
-  "name": "greenville-avenue-bot-root",
+  "name": "greenville-avenue-bot",
   "version": "1.0.0",
-  "private": true,
-  "description": "Root launcher for the Greenville Avenue Discord bot",
+  "description": "Discord bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
