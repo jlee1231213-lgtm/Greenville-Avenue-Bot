@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, ComponentType } = require("discord.js");
 const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
+const { DEFAULT_RELEASE_EMBED, isLegacyReleaseEmbed } = require('../../utils/defaultEmbeds');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
@@ -62,23 +63,25 @@ module.exports = {
     const frpLimit = interaction.options.getString('frplimit');
     const leoStatus = interaction.options.getString('leo');
 
-    const releaseTemplate = settings?.releaseEmbed || {};
+    if (settings && isLegacyReleaseEmbed(settings.releaseEmbed)) {
+      settings.releaseEmbed = DEFAULT_RELEASE_EMBED;
+      await settings.save();
+    }
+
+    const releaseTemplate = settings?.releaseEmbed || DEFAULT_RELEASE_EMBED;
     const embed = new EmbedBuilder()
-      .setTitle(releaseTemplate.title || "Data not found")
+      .setTitle((releaseTemplate.title || DEFAULT_RELEASE_EMBED.title).replace(/\$user/g, `<@${interaction.user.id}>`))
       .setDescription(
-        (releaseTemplate.description || "Release embed data was not found. Please use /settings to configure the Embed.")
+        (releaseTemplate.description || DEFAULT_RELEASE_EMBED.description)
           .replace(/\$user/g, `<@${interaction.user.id}>`)
           .replace(/\$pt/g, ptStatus)
           .replace(/\$frplimit/g, frpLimit)
           .replace(/\$leo/g, leoStatus)
       )
-      .addFields(
-        { name: 'LEO Status', value: leoStatus, inline: true }
-      )
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    if (releaseTemplate.image?.startsWith('http')) embed.setImage(releaseTemplate.image);
+    if ((releaseTemplate.image || DEFAULT_RELEASE_EMBED.image)?.startsWith('http')) embed.setImage(releaseTemplate.image || DEFAULT_RELEASE_EMBED.image);
     if (releaseTemplate.thumbnail?.startsWith('http')) embed.setThumbnail(releaseTemplate.thumbnail);
 
     const row = new ActionRowBuilder().addComponents(
