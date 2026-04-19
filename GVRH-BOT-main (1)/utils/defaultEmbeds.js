@@ -19,8 +19,17 @@ function isLegacyStartupEmbed(embed) {
   const legacyDescription = 'React with ✅ to join the session!';
   const title = String(embed.title || '').trim();
   const description = String(embed.description || '').trim();
+  const normalizedTitle = title.toLowerCase();
+  const normalizedDescription = description.toLowerCase();
+  const placeholderValues = new Set(['test', 'test test', 'testing', 'n/a']);
 
-  return !title || !description || (title === legacyTitle && description === legacyDescription);
+  return (
+    !title ||
+    !description ||
+    (title === legacyTitle && description === legacyDescription) ||
+    placeholderValues.has(normalizedTitle) ||
+    placeholderValues.has(normalizedDescription)
+  );
 }
 
 function getDefaultEmbed(field) {
