@@ -24,6 +24,11 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("reinvites")
     .setDescription("Post reinvites for a session")
+    .addUserOption(option =>
+      option.setName("host")
+        .setDescription("The host for this session")
+        .setRequired(true)
+    )
     .addStringOption(option =>
       option.setName("link")
         .setDescription("The private server link")
@@ -81,15 +86,13 @@ module.exports = {
     const currentCount = (interaction.client.reinviteCounters.get(channelId) || 0) + 1;
     interaction.client.reinviteCounters.set(channelId, currentCount);
 
+    const hostUser = interaction.options.getUser('host');
     const sessionLink = interaction.options.getString('link');
     const ptStatus = interaction.options.getString('peacetime');
     const frpLimit = interaction.options.getString('frplimit');
     const leoStatus = interaction.options.getString('leo');
-    const userToPing = interaction.user.id;
-    const reinvitesTemplate = {
-      ...DEFAULT_REINVITES_TEMPLATE,
-      ...(settings?.reinvitesEmbed || {}),
-    };
+    const userToPing = hostUser.id;
+    const reinvitesTemplate = DEFAULT_REINVITES_TEMPLATE;
 
     const embed = new EmbedBuilder()
       .setTitle(reinvitesTemplate.title)
@@ -158,7 +161,7 @@ module.exports = {
         .setTitle('Reinvites Initiated')
         .setDescription(`Reinvites round ${currentCount} started by ${interaction.user.tag}`)
         .addFields(
-          { name: 'Host', value: `<@${userToPing}>`, inline: true },
+          { name: 'Host', value: `<@${hostUser.id}>`, inline: true },
           { name: 'FRP Speed Limit', value: frpLimit, inline: true },
           { name: 'Peacetime Status', value: ptStatus, inline: true },
           { name: 'Law Enforcement', value: leoStatus, inline: true },
