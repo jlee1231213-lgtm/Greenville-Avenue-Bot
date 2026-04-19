@@ -7,7 +7,7 @@ const {
     EmbedBuilder 
 } = require('discord.js');
 const Settings = require('../models/settings');
-const { getDefaultEmbed } = require('../utils/defaultEmbeds');
+const { getDefaultEmbed, isLegacyStartupEmbed } = require('../utils/defaultEmbeds');
 
 async function updateSetting(guildId, field, value) {
     let doc = await Settings.findOne({ guildId });
@@ -205,9 +205,11 @@ module.exports = {
             const embedFields = ['startupEmbed','eaEmbed','giveawayEmbed','setupEmbed','welcomeEmbed','cohostEmbed','cohostendEmbed','ticketSupportEmbed','releaseEmbed','overEmbed'];
             if (embedFields.includes(interaction.values[0])) {
                 const field = interaction.values[0];
-                const currentEmbed = settings?.[field]?.title || settings?.[field]?.description || settings?.[field]?.image || settings?.[field]?.thumbnail || settings?.[field]?.placeholder
-                    ? settings[field]
-                    : getDefaultEmbed(field);
+                const currentEmbed = field === 'startupEmbed' && isLegacyStartupEmbed(settings?.[field])
+                    ? getDefaultEmbed(field)
+                    : settings?.[field]?.title || settings?.[field]?.description || settings?.[field]?.image || settings?.[field]?.thumbnail || settings?.[field]?.placeholder
+                        ? settings[field]
+                        : getDefaultEmbed(field);
                 const modal = new ModalBuilder().setCustomId(`embed_modal_${field}`).setTitle('Set Embed');
                 const components = [
                     new ActionRowBuilder().addComponents(
