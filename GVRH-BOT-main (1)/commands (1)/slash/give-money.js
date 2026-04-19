@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Eco = require('../../models/eco');
 const Settings = require('../../models/settings');
+const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -23,7 +24,7 @@ module.exports = {
     const settings = await Settings.findOne({ guildId: guild.id });
     const embedColor = settings?.embedcolor || "#ff9933";
 
-    if (!settings?.civiRoleId || !member.roles.cache.has(settings.civiRoleId)) {
+    if (!memberHasAnyConfiguredRole(member, settings?.civiRoleId)) {
       return interaction.reply({
         embeds: [
           new EmbedBuilder()

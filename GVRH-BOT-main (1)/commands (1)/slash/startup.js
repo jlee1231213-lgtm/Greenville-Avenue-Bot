@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const StartupSession = require(path.join(__dirname, '../../models/startupsession'));
 const Settings = require('../../models/settings');
+const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 const activeStartupSessions = new Map();
 
@@ -40,8 +41,7 @@ module.exports = {
       }
     }
 
-    const staffRoleId = settings.staffRoleId;
-    if (!bypassPerms && (!staffRoleId || !interaction.member.roles.cache.has(staffRoleId))) {
+    if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings.staffRoleId)) {
       return interaction.editReply({ content: 'You must have the Staff role', ephemeral: true });
     }
 

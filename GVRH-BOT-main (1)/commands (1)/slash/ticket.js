@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
 const Ticket = require('../../models/tickets');
+const { getConfiguredRoleIds, memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -26,9 +27,9 @@ module.exports = {
     const settings = await Settings.findOne({ guildId });
     if (!settings) return interaction.reply({ content: 'Server settings not found!', ephemeral: true });
 
-    const leoRoleId = settings.leoRoleId;
-    if (!leoRoleId) return interaction.reply({ content: 'LEO role is not set in server settings.', ephemeral: true });
-    if (!member.roles.cache.has(leoRoleId)) return interaction.reply({ content: 'You must have the LEO role to issue tickets.', ephemeral: true });
+    const leoRoleIds = getConfiguredRoleIds(settings.leoRoleId);
+    if (leoRoleIds.length === 0) return interaction.reply({ content: 'LEO role is not set in server settings.', ephemeral: true });
+    if (!memberHasAnyConfiguredRole(member, settings.leoRoleId)) return interaction.reply({ content: 'You must have the LEO role to issue tickets.', ephemeral: true });
 
     const finedUser = interaction.options.getUser('user');
     const offense = interaction.options.getString('offense');

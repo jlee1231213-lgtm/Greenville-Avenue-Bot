@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
+const { getConfiguredRoleIds, memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -20,8 +21,8 @@ module.exports = {
     const settings = await Settings.findOne({ guildId: interaction.guild.id });
     const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
 
-    const allowedRoleIds = [settings?.leoRoleId, settings?.staffRoleId, settings?.adminRoleId].filter(Boolean);
-    if (!bypassPerms && allowedRoleIds.length > 0 && !interaction.member.roles.cache.some(r => allowedRoleIds.includes(r.id))) {
+    const allowedRoleIds = getConfiguredRoleIds(settings?.leoRoleId, settings?.staffRoleId, settings?.adminRoleId);
+    if (!bypassPerms && allowedRoleIds.length > 0 && !memberHasAnyConfiguredRole(interaction.member, settings?.leoRoleId, settings?.staffRoleId, settings?.adminRoleId)) {
       return interaction.editReply({ content: 'You do not have permission to send panic alerts.' });
     }
 

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
 const Vehicle = require('../../models/vehicle');
+const { getConfiguredRoleIds, memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -36,9 +37,9 @@ module.exports = {
 
         if (!settings) return interaction.reply({ content: 'Server settings not found!', ephemeral: true });
 
-        const civRoleId = settings.civiRoleId;
-        if (!civRoleId) return interaction.reply({ content: 'Civilian role is not set in server settings.', ephemeral: true });
-        if (!member.roles.cache.has(civRoleId)) return interaction.reply({ content: 'You must have the Civilian role to register a vehicle.', ephemeral: true });
+        const civRoleIds = getConfiguredRoleIds(settings.civiRoleId);
+        if (civRoleIds.length === 0) return interaction.reply({ content: 'Civilian role is not set in server settings.', ephemeral: true });
+        if (!memberHasAnyConfiguredRole(member, settings.civiRoleId)) return interaction.reply({ content: 'You must have the Civilian role to register a vehicle.', ephemeral: true });
 
         const userId = interaction.user.id;
         const vehicleCount = await Vehicle.countDocuments({ UserID: userId });

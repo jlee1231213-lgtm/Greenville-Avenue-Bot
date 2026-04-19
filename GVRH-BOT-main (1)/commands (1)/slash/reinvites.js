@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, ComponentType } = require("discord.js");
 const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
+const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -16,10 +17,9 @@ module.exports = {
     const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
     const settings = await Settings.findOne({ guildId: interaction.guild.id });
     const embedColor = settings?.embedcolor || '#7545B0';
-    const staffRoleId = settings?.staffRoleId;
     const reinvitesTemplate = settings?.reinvitesEmbed || {};
 
-    if (!bypassPerms && (!staffRoleId || !interaction.member.roles.cache.has(staffRoleId))) {
+    if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId)) {
       return interaction.reply({
         embeds: [
           new EmbedBuilder()

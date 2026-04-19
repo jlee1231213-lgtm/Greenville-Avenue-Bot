@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRow
 const SessionLog = require('../../models/sessionlog');
 const Settings = require('../../models/settings');
 const { activeStartupSessions } = require('../slash/startup');
+const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -18,8 +19,7 @@ module.exports = {
       const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
       const settings = await Settings.findOne({ guildId: interaction.guild.id });
       const embedColor = settings?.embedcolor || '#ab6cc4';
-      const allowedRoleIds = [settings?.staffRoleId, settings?.adminRoleId].filter(Boolean);
-      if (!bypassPerms && !interaction.member.roles.cache.some(role => allowedRoleIds.includes(role.id))) {
+      if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId, settings?.adminRoleId)) {
         if (!interaction.replied && !interaction.deferred) {
           return await interaction.reply({
             embeds: [

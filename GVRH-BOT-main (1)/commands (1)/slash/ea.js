@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ComponentType, ButtonStyle } = require('discord.js');
 const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
+const { getConfiguredRoleIds, memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -30,8 +31,8 @@ module.exports = {
       });
     }
 
-    const allowedRoleIds = [settings.eaRoleId, settings.staffRoleId, settings.adminRoleId, settings.leoRoleId].filter(Boolean);
-    if (!bypassPerms && !interaction.member.roles.cache.some(r => allowedRoleIds.includes(r.id))) {
+    const allowedRoleIds = getConfiguredRoleIds(settings.eaRoleId, settings.staffRoleId, settings.adminRoleId, settings.leoRoleId);
+    if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings.eaRoleId, settings.staffRoleId, settings.adminRoleId, settings.leoRoleId)) {
       return interaction.reply({
         embeds: [
           new EmbedBuilder()
@@ -85,7 +86,7 @@ module.exports = {
 
     const collector = earlyAccessMessage.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3600000 });
     collector.on('collect', async i => {
-      if (!i.member.roles.cache.some(r => allowedRoleIds.includes(r.id))) {
+      if (!memberHasAnyConfiguredRole(i.member, settings.eaRoleId, settings.staffRoleId, settings.adminRoleId, settings.leoRoleId)) {
         return i.reply({
           embeds: [new EmbedBuilder().setDescription('You do not have the required role.').setColor(embedColor)],
           ephemeral: true
