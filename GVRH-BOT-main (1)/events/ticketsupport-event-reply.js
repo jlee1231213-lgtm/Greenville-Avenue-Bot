@@ -16,8 +16,8 @@ const Settings = require('../models/settings');
 
 const TICKET_TYPE_META = {
   st: {
-    label: 'General Question',
-    formatTitle: 'Question Format',
+    label: 'General Assistance',
+    formatTitle: 'General Assistance Format',
     formatLines: [
       'Topic: [what this is about]',
       'What you need help with: [details]',

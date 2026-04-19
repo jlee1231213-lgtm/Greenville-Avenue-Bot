@@ -3,8 +3,8 @@ const Settings = require('../../models/settings');
 
 const DEFAULT_PANEL = {
   title: 'Communited Assistance',
-  description: `**<:orange_arrow:1418054390765457479>: General Question**
-    <:sub1v2:1418076490972532868> Opening a “General Question” ticket means you may ask any concerns or suggestions about or in **Greenville Avenue**
+  description: `**<:orange_arrow:1418054390765457479>: General Assistance**
+    <:sub1v2:1418076490972532868> Opening a “General Assistance” ticket means you may ask any concerns or suggestions about or in **Greenville Avenue**
 
 
 **<:orange_arrow:1418054390765457479> Member Report**
@@ -53,7 +53,7 @@ module.exports = {
           .setPlaceholder(panelConfig.placeholder || DEFAULT_PANEL.placeholder)
           .addOptions([
             {
-              label: 'General Question',
+              label: 'General Assistance',
               description: `Open a ticket to ask a question.`,
               value: 'st',
             },
