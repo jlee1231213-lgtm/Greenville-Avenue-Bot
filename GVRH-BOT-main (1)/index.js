@@ -11,12 +11,16 @@ if (!process.env.MONGODB_URI) {
     console.error('[ERROR] No MongoDB URI found in environment variables. Please set MONGODB_URI in your .env file.');
     process.exit(1);
 }
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('[INFO] Connected to MongoDB'))
-    .catch((err) => {
+
+async function connectToMongo() {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('[INFO] Connected to MongoDB');
+    } catch (err) {
         console.error('[ERROR] Failed to connect to MongoDB:', err);
-        console.warn('[WARN] Bot will continue running, but database-backed features may fail until MongoDB reconnects.');
-    });
+        process.exit(1);
+    }
+}
 
 mongoose.connection.on('connected', () => {
     console.log('[INFO] MongoDB connection established.');
@@ -81,16 +85,22 @@ for (const file of eventFiles) {
     }
 }
 // Login with error handling
-if (!process.env.TOKEN || process.env.TOKEN === "" || process.env.TOKEN === "your_discord_bot_token_here") {
-    console.error("[ERROR] No valid Discord bot token found in environment variables. Please set TOKEN in your .env file.");
-    process.exit(1);
+async function startBot() {
+    await connectToMongo();
+
+    if (!process.env.TOKEN || process.env.TOKEN === "" || process.env.TOKEN === "your_discord_bot_token_here") {
+        console.error("[ERROR] No valid Discord bot token found in environment variables. Please set TOKEN in your .env file.");
+        process.exit(1);
+    }
+
+    client.login(process.env.TOKEN).catch((err) => {
+        if (err.message && err.message.includes('An invalid token was provided')) {
+            console.error("[ERROR] Invalid Discord bot token. Please check your TOKEN in the .env file and try again.");
+        } else {
+            console.error("[ERROR] Failed to login:", err);
+        }
+        process.exit(1);
+    });
 }
 
-client.login(process.env.TOKEN).catch((err) => {
-    if (err.message && err.message.includes('An invalid token was provided')) {
-        console.error("[ERROR] Invalid Discord bot token. Please check your TOKEN in the .env file and try again.");
-    } else {
-        console.error("[ERROR] Failed to login:", err);
-    }
-    process.exit(1);
-});
+startBot();

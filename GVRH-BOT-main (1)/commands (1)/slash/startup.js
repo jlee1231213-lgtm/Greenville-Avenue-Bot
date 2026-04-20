@@ -20,7 +20,7 @@ module.exports = {
 
   async execute(interaction) {
     const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: 64 });
 
     let settings = await Settings.findOne({ guildId: interaction.guild.id });
     
@@ -35,12 +35,12 @@ module.exports = {
           setupEmbed: {}
         });
       } catch (error) {
-        return interaction.editReply({ content: 'Failed to create server settings. Please use `/settings` to configure the server.', ephemeral: true });
+        return interaction.editReply({ content: 'Failed to create server settings. Please use `/settings` to configure the server.' });
       }
     }
 
     if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings.staffRoleId)) {
-      return interaction.editReply({ content: 'You must have the Staff role', ephemeral: true });
+      return interaction.editReply({ content: 'You must have the Staff role' });
     }
 
     const reactionsRequired = interaction.options.getInteger('reactions');
@@ -71,7 +71,7 @@ module.exports = {
 
     await StartupSession.create({ guildId: interaction.guild.id, channelId: interaction.channel.id, messageId: message.id, createdAt: now });
 
-    await interaction.editReply({ content: 'Session started successfully.', ephemeral: true });
+    await interaction.editReply({ content: 'Session started successfully.' });
 
     const filter = (reaction, user) => reaction.emoji.name === '✅' && !user.bot;
     const collector = message.createReactionCollector({ filter, max: reactionsRequired, time: 1000 * 60 * 60 }); 
