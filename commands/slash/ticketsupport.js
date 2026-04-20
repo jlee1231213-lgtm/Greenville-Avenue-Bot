@@ -26,9 +26,10 @@ module.exports = {
     const channelid = `${interaction.channel.id}`
     const settings = await Settings.findOne({ guildId: interaction.guild.id });
     const embedColor = settings?.embedcolor || '#ff7f25';
+    const savedPanel = settings?.ticketSupportEmbed || {};
     const panelConfig = {
       ...DEFAULT_PANEL,
-      ...(settings?.ticketSupportEmbed || {})
+      ...savedPanel
     };
 
  
@@ -36,14 +37,17 @@ module.exports = {
 
 
     const embed = new EmbedBuilder()
-      .setTitle(panelConfig.title)
-      .setDescription(panelConfig.description)
+      .setTitle(panelConfig.title || DEFAULT_PANEL.title)
+      .setDescription(panelConfig.description || DEFAULT_PANEL.description)
       .setColor(embedColor)
-      .setImage(panelConfig.image || null)
       .setFooter({ 
         text: `${interaction.guild.name}`,
         iconURL: interaction.guild.iconURL() || undefined
       });
+
+    if (typeof panelConfig.image === 'string' && panelConfig.image.startsWith('http')) {
+      embed.setImage(panelConfig.image);
+    }
 
 
     const row = new ActionRowBuilder()
