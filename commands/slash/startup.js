@@ -11,7 +11,6 @@ const STARTUP_REACTION_IDENTIFIER = 'blue_heartburst:1493951094605353062';
 const STARTUP_REACTION_ID = '1493951094605353062';
 const STARTUP_REACTION_FALLBACK = '✅';
 const STARTUP_STEP_TIMEOUT_MS = 15000;
-const STARTUP_GUILD_ID = process.env.STARTUP_GUILD_ID?.trim() || process.env.GUILD_ID?.trim() || null;
 
 function isStartupReaction(reaction) {
   return reaction?.emoji?.id === STARTUP_REACTION_ID
@@ -65,10 +64,6 @@ module.exports = {
     try {
       if (!interaction.inGuild()) {
         return interaction.editReply({ content: 'This command can only be used in a server.' });
-      }
-
-      if (STARTUP_GUILD_ID && interaction.guild.id !== STARTUP_GUILD_ID) {
-        return interaction.editReply({ content: 'This startup command is only enabled in the configured server.' });
       }
 
       if (!interaction.channel?.isTextBased()) {

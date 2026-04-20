@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionsBitField } = require('discord.js');
 const Settings = require('../../models/settings');
 const SessionLog = require('../../models/sessionlog');
 const { activeStartupSessions } = require('./startup');
@@ -12,9 +12,25 @@ module.exports = {
   async execute(interaction) {
     const settings = await Settings.findOne({ guildId: interaction.guild.id });
     const embedColor = settings?.embedcolor || '#ab6cc4';
+    const botMember = interaction.guild.members.me || await interaction.guild.members.fetchMe().catch(() => null);
+    const channelPermissions = botMember ? interaction.channel?.permissionsFor(botMember) : null;
     // Role checks removed: anyone can use this command
 
-    await interaction.deferReply({ ephemeral: true });
+    if (!channelPermissions?.has(PermissionsBitField.Flags.ViewChannel)
+      || !channelPermissions.has(PermissionsBitField.Flags.SendMessages)
+      || !channelPermissions.has(PermissionsBitField.Flags.EmbedLinks)) {
+      return interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle('Channel Access Required')
+            .setDescription('I cannot post the cohost embed here. Please give me View Channel, Send Messages, and Embed Links in this channel, then try again.')
+            .setColor(embedColor)
+        ],
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const userId = interaction.user.id;
     const timestamp = new Date();
     const sessionId = uuidv4();
@@ -49,8 +65,15 @@ module.exports = {
     if (cohostTemplate.thumbnail?.startsWith('http')) cohostEmbed.setThumbnail(cohostTemplate.thumbnail);
 
     let postedMessage = null;
-    if (replyTarget && replyTarget.reply) postedMessage = await replyTarget.reply({ embeds: [cohostEmbed] });
-    else postedMessage = await interaction.channel.send({ embeds: [cohostEmbed] });
+    try {
+      if (replyTarget && replyTarget.reply) postedMessage = await replyTarget.reply({ embeds: [cohostEmbed] });
+      else postedMessage = await interaction.channel.send({ embeds: [cohostEmbed] });
+    } catch (error) {
+      if (error?.code === 50001 || error?.code === 50013) {
+        return interaction.editReply({ content: 'I could not send the cohost embed in this channel. Please check my channel access and permissions.' });
+      }
+      throw error;
+    }
 
     activeStartupSessions.set(sessionId, {
       userId,
@@ -68,6 +91,6 @@ module.exports = {
       timeended: null,
     });
 
-    await interaction.editReply({ content: 'Cohost registered successfully.', ephemeral: true });
+    await interaction.editReply({ content: 'Cohost registered successfully.' });
   }
 };

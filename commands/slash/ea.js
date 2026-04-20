@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ComponentType, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ComponentType, ButtonStyle, MessageFlags, PermissionsBitField } = require('discord.js');
 const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
 const { getConfiguredRoleIds, memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
@@ -20,6 +20,8 @@ module.exports = {
     const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
     const settings = await Settings.findOne({ guildId: interaction.guild.id });
     const embedColor = settings?.embedcolor || '#ab6cc4';
+    const botMember = interaction.guild.members.me || await interaction.guild.members.fetchMe().catch(() => null);
+    const channelPermissions = botMember ? interaction.channel?.permissionsFor(botMember) : null;
 
     if (!settings) {
       return interaction.reply({
@@ -30,7 +32,7 @@ module.exports = {
             .setColor(embedColor)
             .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined })
         ],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -41,11 +43,25 @@ module.exports = {
             .setDescription('You do not have the required role to access the link.')
             .setColor(embedColor)
         ],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
-    await interaction.deferReply({ ephemeral: true });
+    if (!channelPermissions?.has(PermissionsBitField.Flags.ViewChannel)
+      || !channelPermissions.has(PermissionsBitField.Flags.SendMessages)
+      || !channelPermissions.has(PermissionsBitField.Flags.EmbedLinks)) {
+      return interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle('Channel Access Required')
+            .setDescription('I cannot post Early Access here. Please give me View Channel, Send Messages, and Embed Links in this channel, then try again.')
+            .setColor(embedColor)
+        ],
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const sessionLink = interaction.options.getString('link');
     const userMention = `<@${interaction.user.id}>`;
@@ -69,7 +85,15 @@ module.exports = {
       const button = new ButtonBuilder().setCustomId('get_ealink').setLabel('Get Link').setEmoji({ id: '1489643253681754112', name: 'BlueLine_chain' }).setStyle(ButtonStyle.Success);
     const row = new ActionRowBuilder().addComponents(button);
 
-    const earlyAccessMessage = await interaction.channel.send({ content: '@here', embeds: [embed], components: [row] });
+    let earlyAccessMessage;
+    try {
+      earlyAccessMessage = await interaction.channel.send({ content: '@here', embeds: [embed], components: [row] });
+    } catch (error) {
+      if (error?.code === 50001 || error?.code === 50013) {
+        return interaction.editReply({ content: 'I could not send the Early Access message in this channel. Please check my channel access and permissions.' });
+      }
+      throw error;
+    }
     await interaction.editReply({ content: 'Early access message sent successfully.' });
 
     let logChannel;
