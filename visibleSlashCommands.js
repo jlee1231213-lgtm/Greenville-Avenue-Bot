@@ -4,6 +4,7 @@ const VISIBLE_SLASH_COMMANDS = new Set([
     'cohost',
     'release',
     'register',
+    'role',
     'reinvites',
     'concluded',
     'ea',
