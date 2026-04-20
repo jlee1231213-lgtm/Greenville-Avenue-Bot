@@ -39,7 +39,13 @@ mongoose.connection.on('error', (err) => {
     console.error('[ERROR] MongoDB connection error:', err?.message || err);
 });
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMessageReactions,
+    ]
+});
 
 function findSlashCommandsPath() {
     const candidates = [
