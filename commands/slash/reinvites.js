@@ -111,7 +111,7 @@ module.exports = {
     const button = new ButtonBuilder()
       .setCustomId('reinvites_link')
       .setLabel('Get Session Link')
-      .setEmoji('🔗')
+        .setEmoji({ id: '1489643253681754112', name: 'BlueLine_chain' })
       .setStyle(ButtonStyle.Success);
 
     const row = new ActionRowBuilder().addComponents(button);

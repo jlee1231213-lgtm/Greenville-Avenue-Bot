@@ -90,6 +90,7 @@ module.exports = {
       new ButtonBuilder()
         .setCustomId("getlink")
         .setLabel('Link')
+          .setEmoji({ id: '1489643253681754112', name: 'BlueLine_chain' })
           .setStyle(ButtonStyle.Success)
     );
 
