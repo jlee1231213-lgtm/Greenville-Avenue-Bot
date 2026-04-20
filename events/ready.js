@@ -63,12 +63,20 @@ async function deployGuildCommands(client) {
 
     const deployGuildId = process.env.GUILD_ID?.trim();
     if (deployGuildId) {
-        await rest.put(
-            Routes.applicationGuildCommands(client.application.id, deployGuildId),
-            { body: commands },
-        );
-        console.log(`[INFO] Testing mode: deployed ${commands.length} guild slash commands to ${deployGuildId}`);
-        return;
+        try {
+            await rest.put(
+                Routes.applicationGuildCommands(client.application.id, deployGuildId),
+                { body: commands },
+            );
+            console.log(`[INFO] Testing mode: deployed ${commands.length} guild slash commands to ${deployGuildId}`);
+            return;
+        } catch (error) {
+            if (error?.code === 50001) {
+                console.warn(`[WARN] Missing access to guild ${deployGuildId}. Falling back to global slash command deploy.`);
+            } else {
+                throw error;
+            }
+        }
     }
 
     await rest.put(

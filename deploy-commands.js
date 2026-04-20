@@ -40,16 +40,24 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
         const deployGuildId = process.env.GUILD_ID?.trim();
         if (deployGuildId) {
-            await rest.put(
-                Routes.applicationGuildCommands(
-                    process.env.CLIENT_ID,
-                    deployGuildId
-                ),
-                { body: commands }
-            );
+            try {
+                await rest.put(
+                    Routes.applicationGuildCommands(
+                        process.env.CLIENT_ID,
+                        deployGuildId
+                    ),
+                    { body: commands }
+                );
 
-            console.log(`✅ Successfully registered ${commands.length} guild commands to ${deployGuildId}.`);
-            return;
+                console.log(`✅ Successfully registered ${commands.length} guild commands to ${deployGuildId}.`);
+                return;
+            } catch (error) {
+                if (error?.code === 50001) {
+                    console.warn(`⚠️ Missing access to guild ${deployGuildId}. Falling back to global command registration.`);
+                } else {
+                    throw error;
+                }
+            }
         }
 
         await rest.put(
