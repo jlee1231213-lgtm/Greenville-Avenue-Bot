@@ -14,7 +14,12 @@ if (!process.env.MONGODB_URI) {
 
 async function connectToMongo() {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('[INFO] Connecting to MongoDB...');
+        await mongoose.connect(process.env.MONGODB_URI, {
+            serverSelectionTimeoutMS: 15000,
+            connectTimeoutMS: 15000,
+            socketTimeoutMS: 20000,
+        });
         console.log('[INFO] Connected to MongoDB');
     } catch (err) {
         console.error('[ERROR] Failed to connect to MongoDB:', err);
@@ -93,6 +98,8 @@ async function startBot() {
         process.exit(1);
     }
 
+    console.log('[INFO] Logging into Discord...');
+
     client.login(process.env.TOKEN).catch((err) => {
         if (err.message && err.message.includes('An invalid token was provided')) {
             console.error("[ERROR] Invalid Discord bot token. Please check your TOKEN in the .env file and try again.");
@@ -103,4 +110,7 @@ async function startBot() {
     });
 }
 
-startBot();
+startBot().catch((err) => {
+    console.error('[ERROR] Bot startup failed:', err);
+    process.exit(1);
+});
