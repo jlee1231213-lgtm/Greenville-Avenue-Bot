@@ -49,21 +49,13 @@ async function deployGuildCommands(client) {
 
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
-    // Remove old global commands during testing to avoid duplicate command listings.
-    try {
-        await rest.put(
-            Routes.applicationCommands(client.application.id),
-            { body: [] },
-        );
-        console.log('[INFO] Cleared global application commands.');
-    } catch (error) {
-        console.warn('[WARN] Failed to clear global application commands. Continuing with guild deploy.');
-        console.warn(error?.message || error);
-    }
-
     const deployGuildId = process.env.GUILD_ID?.trim();
-    let fellBackFromGuildDeploy = false;
     if (deployGuildId) {
+        if (!client.guilds.cache.has(deployGuildId)) {
+            console.warn(`[WARN] Testing mode is enabled, but this bot is not in guild ${deployGuildId}. Skipping slash command deploy.`);
+            return;
+        }
+
         try {
             await rest.put(
                 Routes.applicationGuildCommands(client.application.id, deployGuildId),
@@ -73,23 +65,15 @@ async function deployGuildCommands(client) {
             return;
         } catch (error) {
             if (error?.code === 50001) {
-                fellBackFromGuildDeploy = true;
-                console.warn(`[WARN] Missing access to guild ${deployGuildId}. Falling back to global slash command deploy.`);
+                console.warn(`[WARN] Missing access to guild ${deployGuildId}. Skipping slash command deploy.`);
+                return;
             } else {
                 throw error;
             }
         }
     }
 
-    await rest.put(
-        Routes.applicationCommands(client.application.id),
-        { body: commands },
-    );
-    if (fellBackFromGuildDeploy) {
-        console.log(`[INFO] Testing mode: deployed ${commands.length} global slash commands after guild deploy failed for ${deployGuildId}`);
-    } else {
-        console.log(`[INFO] Testing mode: deployed ${commands.length} global slash commands because GUILD_ID is not set`);
-    }
+    console.warn('[WARN] Testing mode is enabled, but GUILD_ID is not set. Skipping slash command deploy.');
 }
 
 module.exports = {
@@ -125,7 +109,7 @@ https://discord.gg/PCkUk7X28c`;
         console.log(`Bot is online as ${client.user.tag}`);
         client.user.setPresence({ activities: [{ name: 'Greenville Avenue' }], status: 'online' });
 
-        const testingMode = process.env.TESTING_MODE !== 'false';
+        const testingMode = process.env.TESTING_MODE === 'true';
         if (testingMode) {
             try {
                 await deployGuildCommands(client);
