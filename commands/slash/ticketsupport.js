@@ -2,18 +2,20 @@ const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBui
 const Settings = require('../../models/settings');
 
 const DEFAULT_PANEL = {
-  title: 'Communited Assistance',
-  description: `**<:orange_arrow:1418054390765457479>: General Assistance**
-    <:sub1v2:1418076490972532868> Opening a “General Assistance” ticket means you may ask any concerns or suggestions about or in **Greenville Avenue**
+  title: 'Greenville Avenue - Support Tickets',
+  description: `Welcome to the Greenville Avenue, Support Directory! This channel allows you to request assistance, such as General Support, Staff Report, or a Civilian Report. If you are facing any issues within the server, please do not hesitate to make a ticket below!
 
+> **\`General Assistance:\`**
+<:gvry_ydot:1489356230785761382> Use this support ticket to ask **questions** about rules or sessions. You may also use this ticket to **Request Partnerships, Claim Perks, or for Application Requests**. This is not to be used to report someone, as there are other tickets to use that for.
 
-**<:orange_arrow:1418054390765457479> Member Report**
-<:sub1v2:1418076490972532868> If you want to report a member/staff that **broke the communities rules or Discord TOS**, open a “Member Report” for one of our staff members to come and help out
+> **\`Member Report:\`**
+<:gvry_ydot:1489356230785761382> Use this to report a **Civilian** who might be breaking the rules. Make sure to gather proof as it is necessary so that the server High Command Team can take action, depending on the severity. If further support is needed, please request the Staff Member to assist you further.
 
+> **\`Staff Report:\`**
+<:gvry_ydot:1489356230785761382> Use this to report a **Staff Member** who might be breaking the rules. Make sure to gather proof as it is necessary so that the server High Command Team can take action, depending on the severity. If further support is needed, please request the High Command Member to assist you further.
 
-**<:orange_arrow:1418054390765457479> Staff Report**
-<:sub1v2:1418076490972532868> If you need to report a staff member for misconduct or improper handling, open a “Staff Report” so leadership can review it.`,
-  image: 'https://cdn.discordapp.com/attachments/1417296613839339621/1420607848261619782/Your_paragraph_text.png?ex=68d603a8&is=68d4b228&hm=36bee8efa2eb423650e96c683562ed65a077d0574d04345732b849fbf21a0a8f&',
+-# **Please Note:** If you do not respond to your ticket within **24 Hours**, it will be __automatically__ closed. Processing your support tickets may take between **2-3** Hours.`,
+  image: 'https://media.discordapp.net/attachments/1450473391134871565/1492937155973091429/Screenshot_20260402_223741.jpg?ex=69dd2593&is=69dbd413&hm=4b2b3ce43a1614758c54f42720f7f7d6b5f3c5b86cddd626c42fd155c6bae182&=&format=webp&width=2160&height=1048',
   placeholder: 'Select an option'
 };
 
