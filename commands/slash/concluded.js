@@ -55,31 +55,7 @@ async function purgeNonPinnedMessages(channel) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('concluded')
-        .setDescription('Send a concluded session message')
-        .addStringOption(option =>
-            option
-                .setName('start_time')
-                .setDescription('Session start time, or leave blank to autofill from startup')
-                .setRequired(false)
-        )
-        .addStringOption(option =>
-            option
-                .setName('end_time')
-                .setDescription('Session end time, or leave blank to use now')
-                .setRequired(false)
-        )
-        .addStringOption(option =>
-            option
-                .setName('duration')
-                .setDescription('Session duration, or leave blank to autofill')
-                .setRequired(false)
-        )
-        .addStringOption(option =>
-            option
-                .setName('notes')
-                .setDescription('Any host notes')
-                .setRequired(false)
-        ),
+        .setDescription('Send a concluded session message'),
     async execute(interaction) {
         const settings = await Settings.findOne({ guildId: interaction.guild.id });
         const embedColor = settings?.embedcolor || '#ab6cc4';
@@ -91,10 +67,10 @@ module.exports = {
         }).sort({ createdAt: -1 });
         const startupDate = latestStartupSession?.createdAt ? new Date(latestStartupSession.createdAt) : null;
         const now = new Date();
-        const startTime = interaction.options.getString('start_time') || (startupDate ? formatSessionTime(startupDate) : 'Unknown');
-        const endTime = interaction.options.getString('end_time') || formatSessionTime(now);
-        const duration = interaction.options.getString('duration') || (startupDate ? formatDuration(startupDate, now) : 'Unknown');
-        const notes = interaction.options.getString('notes') || 'No notes provided.';
+        const startTime = startupDate ? formatSessionTime(startupDate) : 'Unknown';
+        const endTime = formatSessionTime(now);
+        const duration = startupDate ? formatDuration(startupDate, now) : 'Unknown';
+        const notes = 'No notes provided.';
         await purgeNonPinnedMessages(interaction.channel);
 
         await StartupSession.deleteMany({
