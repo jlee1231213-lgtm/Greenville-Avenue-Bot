@@ -13,7 +13,7 @@ All participants are required to carefully review and understand the Server Docu
 };
 
 const DEFAULT_SETUP_EMBED = {
-  title: '> <a:load:1489298699669737482> **Greenville Avenue, Setup!** <a:load:1489298699669737482>',
+  title: '> <a:loading:1495624404053262406> **Greenville Avenue, Setup!** <a:loading:1495624404053262406>',
   description: '<a:arrow3:1489298553942708364> $user is officially setting up! Please do **NOT** ping the host. Please patiently wait for the **Host** to release Early Access for server boosters, staff team, public services, and anyone with the Early Access role. This setup should take roughly **5-10** minutes until Early Access. Please wait until then.',
 };
 
@@ -74,6 +74,10 @@ function isLegacyReleaseEmbed(embed) {
 }
 
 function isLegacySetupEmbed(embed) {
+  const title = String(embed?.title || '');
+
+  if (title.includes('1489298699669737482')) return true;
+
   return isPlaceholderEmbed(
     embed,
     '> <a:load:1489298699669737482> **Greenville Avenue, Setup!**<a:load:1489298699669737482>',
