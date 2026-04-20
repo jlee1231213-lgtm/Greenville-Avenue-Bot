@@ -39,6 +39,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
         console.log('🔄 Refreshing application (/) commands...');
 
         const deployGuildId = process.env.GUILD_ID?.trim();
+        let fellBackFromGuildDeploy = false;
         if (deployGuildId) {
             try {
                 await rest.put(
@@ -53,6 +54,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
                 return;
             } catch (error) {
                 if (error?.code === 50001) {
+                    fellBackFromGuildDeploy = true;
                     console.warn(`⚠️ Missing access to guild ${deployGuildId}. Falling back to global command registration.`);
                 } else {
                     throw error;
@@ -65,7 +67,11 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
             { body: commands }
         );
 
-        console.log(`✅ Successfully registered ${commands.length} global commands because GUILD_ID is not set.`);
+        if (fellBackFromGuildDeploy) {
+            console.log(`✅ Successfully registered ${commands.length} global commands after guild deploy failed for ${deployGuildId}.`);
+        } else {
+            console.log(`✅ Successfully registered ${commands.length} global commands because GUILD_ID is not set.`);
+        }
     } catch (error) {
         console.error(error);
     }

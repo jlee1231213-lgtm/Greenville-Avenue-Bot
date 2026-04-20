@@ -62,6 +62,7 @@ async function deployGuildCommands(client) {
     }
 
     const deployGuildId = process.env.GUILD_ID?.trim();
+    let fellBackFromGuildDeploy = false;
     if (deployGuildId) {
         try {
             await rest.put(
@@ -72,6 +73,7 @@ async function deployGuildCommands(client) {
             return;
         } catch (error) {
             if (error?.code === 50001) {
+                fellBackFromGuildDeploy = true;
                 console.warn(`[WARN] Missing access to guild ${deployGuildId}. Falling back to global slash command deploy.`);
             } else {
                 throw error;
@@ -83,7 +85,11 @@ async function deployGuildCommands(client) {
         Routes.applicationCommands(client.application.id),
         { body: commands },
     );
-    console.log(`[INFO] Testing mode: deployed ${commands.length} global slash commands because GUILD_ID is not set`);
+    if (fellBackFromGuildDeploy) {
+        console.log(`[INFO] Testing mode: deployed ${commands.length} global slash commands after guild deploy failed for ${deployGuildId}`);
+    } else {
+        console.log(`[INFO] Testing mode: deployed ${commands.length} global slash commands because GUILD_ID is not set`);
+    }
 }
 
 module.exports = {
