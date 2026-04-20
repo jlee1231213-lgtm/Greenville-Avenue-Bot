@@ -4,15 +4,8 @@ const StartupSession = require('../../models/startupsession');
 const { activeStartupSessions } = require('./startup');
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 
-function formatSessionTime(date) {
-    return new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-        month: 'numeric',
-        day: 'numeric',
-        year: 'numeric',
-    }).format(date);
+function formatDiscordTimestamp(date) {
+    return `<t:${Math.floor(date.getTime() / 1000)}:f>`;
 }
 
 function formatDuration(start, end) {
@@ -73,8 +66,8 @@ module.exports = {
         }).sort({ createdAt: -1 });
         const startupDate = latestStartupSession?.createdAt ? new Date(latestStartupSession.createdAt) : null;
         const now = new Date();
-        const startTime = startupDate ? formatSessionTime(startupDate) : 'Unknown';
-        const endTime = formatSessionTime(now);
+        const startTime = startupDate ? formatDiscordTimestamp(startupDate) : 'Unknown';
+        const endTime = formatDiscordTimestamp(now);
         const duration = startupDate ? formatDuration(startupDate, now) : 'Unknown';
         const notes = interaction.options.getString('notes', true);
         await purgeNonPinnedMessages(interaction.channel);
