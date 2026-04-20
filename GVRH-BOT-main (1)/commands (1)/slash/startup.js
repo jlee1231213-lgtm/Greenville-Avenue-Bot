@@ -7,6 +7,7 @@ const { DEFAULT_SETUP_EMBED, DEFAULT_STARTUP_EMBED, isLegacySetupEmbed, isLegacy
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 const activeStartupSessions = new Map();
+const STARTUP_REACTION_IDENTIFIER = 'blue_heartburst:1493951094605353062';
 const STARTUP_REACTION_ID = '1493951094605353062';
 const STARTUP_REACTION_FALLBACK = '✅';
 
@@ -74,10 +75,33 @@ module.exports = {
     if (startupTemplate.image && startupTemplate.image.startsWith('http')) embed.setImage(startupTemplate.image);
 
     const message = await interaction.channel.send({ content: '@everyone', embeds: [embed] });
+    let reacted = false;
+
     try {
-      await message.react(STARTUP_REACTION_ID);
+      reacted = await message.react(STARTUP_REACTION_IDENTIFIER) ? true : false;
     } catch {
-      await message.react(STARTUP_REACTION_FALLBACK).catch(() => {});
+      // ignore and continue to fallback
+    }
+
+    if (!reacted) {
+      try {
+        reacted = await message.react(STARTUP_REACTION_ID) ? true : false;
+      } catch {
+        // ignore and continue to fallback
+      }
+    }
+
+    if (!reacted) {
+      try {
+        reacted = await message.react(STARTUP_REACTION_FALLBACK) ? true : false;
+      } catch {
+        reacted = false;
+      }
+    }
+
+    if (!reacted) {
+      await interaction.editReply({ content: 'Session started, but I could not add the startup reaction. Please make sure I have Add Reactions and Use External Emojis permissions.' });
+      return;
     }
 
     const sessionId = uuidv4();
@@ -88,10 +112,10 @@ module.exports = {
     await interaction.editReply({ content: 'Session started successfully.' });
 
     const filter = (reaction, user) => isStartupReaction(reaction) && !user.bot;
-    const collector = message.createReactionCollector({ filter, max: reactionsRequired, time: 1000 * 60 * 60 }); 
+    const collector = message.createReactionCollector({ filter, max: reactionsRequired, time: 1000 * 60 * 60 });
 
-    collector.on('collect', async () => {
-      const reactionCount = message.reactions.cache.find(isStartupReaction)?.count || 0;
+    collector.on('collect', async (reaction) => {
+      const reactionCount = reaction.count || 0;
       if (reactionCount - 1 >= reactionsRequired) {
         collector.stop();
 
