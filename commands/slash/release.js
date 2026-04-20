@@ -5,6 +5,7 @@ const { DEFAULT_RELEASE_EMBED, isLegacyReleaseEmbed } = require('../../utils/def
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 const STARTUP_REACTION_ID = '1493951094605353062';
 const STARTUP_REACTION_FALLBACK = '✅';
+const RELEASE_EMBED_IMAGE = 'https://media.discordapp.net/attachments/1489657569030049844/1495495694700777542/Screenshot_20260419_214551.jpg?ex=69e67466&is=69e522e6&hm=20e0b4ecf6b358d8f706262befbfaab9d841a028fbc19feda21a97b951ef184d&=&format=webp&width=2160&height=908';
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -83,7 +84,7 @@ module.exports = {
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    if ((releaseTemplate.image || DEFAULT_RELEASE_EMBED.image)?.startsWith('http')) embed.setImage(releaseTemplate.image || DEFAULT_RELEASE_EMBED.image);
+    embed.setImage(RELEASE_EMBED_IMAGE);
     if (releaseTemplate.thumbnail?.startsWith('http')) embed.setThumbnail(releaseTemplate.thumbnail);
 
     const row = new ActionRowBuilder().addComponents(
