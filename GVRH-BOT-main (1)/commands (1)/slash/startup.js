@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const StartupSession = require(path.join(__dirname, '../../models/startupsession'));
 const Settings = require('../../models/settings');
-const { DEFAULT_STARTUP_EMBED, isLegacyStartupEmbed } = require('../../utils/defaultEmbeds');
+const { DEFAULT_SETUP_EMBED, DEFAULT_STARTUP_EMBED, isLegacySetupEmbed, isLegacyStartupEmbed } = require('../../utils/defaultEmbeds');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 const activeStartupSessions = new Map();
@@ -32,7 +32,7 @@ module.exports = {
           embedcolor: '#ab6cc4',
           staffRoleId: null,
           startupEmbed: DEFAULT_STARTUP_EMBED,
-          setupEmbed: {}
+          setupEmbed: DEFAULT_SETUP_EMBED
         });
       } catch (error) {
         return interaction.editReply({ content: 'Failed to create server settings. Please use `/settings` to configure the server.' });
@@ -51,9 +51,13 @@ module.exports = {
       settings.startupEmbed = DEFAULT_STARTUP_EMBED;
       await settings.save();
     }
+    if (isLegacySetupEmbed(settings.setupEmbed)) {
+      settings.setupEmbed = DEFAULT_SETUP_EMBED;
+      await settings.save();
+    }
 
     const startupTemplate = settings.startupEmbed || DEFAULT_STARTUP_EMBED;
-    const setupTemplate = settings.setupEmbed || {};
+    const setupTemplate = settings.setupEmbed || DEFAULT_SETUP_EMBED;
 
     const embed = new EmbedBuilder()
       .setTitle(startupTemplate.title?.replace(/\$user/g, `<@${userId}>`).replace(/\$date/g, now.toLocaleString()).replace(/\$reactions/g, reactionsRequired) || 'Data not found')
@@ -81,11 +85,11 @@ module.exports = {
         collector.stop();
 
         const setupEmbed = new EmbedBuilder()
-          .setTitle(setupTemplate.title?.replace(/\$user/g, `<@${userId}>`) || 'Data not found')
-          .setDescription(setupTemplate.description?.replace(/\$user/g, `<@${userId}>`) || 'Data was not found, please use `/settings` to configure the Embed')
+          .setTitle((setupTemplate.title || DEFAULT_SETUP_EMBED.title).replace(/\$user/g, `<@${userId}>`))
+          .setDescription((setupTemplate.description || DEFAULT_SETUP_EMBED.description).replace(/\$user/g, `<@${userId}>`))
           .setColor(embedColor);
 
-        if (setupTemplate.image && setupTemplate.image.startsWith('http')) setupEmbed.setImage(setupTemplate.image);
+        if ((setupTemplate.image || DEFAULT_SETUP_EMBED.image)?.startsWith('http')) setupEmbed.setImage(setupTemplate.image || DEFAULT_SETUP_EMBED.image);
 
         await message.reply({ embeds: [setupEmbed] });
       }

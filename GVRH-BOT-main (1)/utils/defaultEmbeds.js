@@ -12,6 +12,11 @@ All participants are required to carefully review and understand the Server Docu
   image: 'https://media.discordapp.net/attachments/1450473391134871565/1489434330404225164/Screenshot_20260402_213804.jpg?ex=69e62810&is=69e4d690&hm=a988d334b024c609e50857fa17c488fbc497bdafb4e7f15cd7b1d35080c0b891&=&format=webp&width=2160&height=1056',
 };
 
+const DEFAULT_SETUP_EMBED = {
+  title: '> <a:load:1489298699669737482> **Greenville Avenue, Setup!** <a:load:1489298699669737482>',
+  description: '<a:arrow3:1489298553942708364> $user is officially setting up! Please do **NOT** ping the host. Please patiently wait for the **Host** to release Early Access for server boosters, staff team, public services, and anyone with the Early Access role. This setup should take roughly **5-10** minutes until Early Access. Please wait until then.',
+};
+
 const DEFAULT_RELEASE_EMBED = {
   title: '<:blue_exclamation:1489356851782090904> **__Greenville Avenue — Session Release__**',
   description: `$user has officially released the roleplay session.
@@ -68,9 +73,20 @@ function isLegacyReleaseEmbed(embed) {
   return isPlaceholderEmbed(embed);
 }
 
+function isLegacySetupEmbed(embed) {
+  return isPlaceholderEmbed(
+    embed,
+    '> <a:load:1489298699669737482> **Greenville Avenue, Setup!**<a:load:1489298699669737482>',
+    '<a:arrow3:1489298553942708364> {user} is offically setting up! Please do **NOT** ping host. Please patiently wait for **Host** to release early access for, server boosters, staff team, and public services and anyone with the early access role. This setup should take roguhly **5-10** minutes untill Early Access. Please wait untill then.'
+  );
+}
+
 function getDefaultEmbed(field) {
   if (field === 'startupEmbed') {
     return { ...DEFAULT_STARTUP_EMBED };
+  }
+  if (field === 'setupEmbed') {
+    return { ...DEFAULT_SETUP_EMBED };
   }
   if (field === 'cohostEmbed') {
     return { ...DEFAULT_COHOST_EMBED };
@@ -89,8 +105,10 @@ module.exports = {
   DEFAULT_COHOST_EMBED,
   DEFAULT_EA_EMBED,
   DEFAULT_RELEASE_EMBED,
+  DEFAULT_SETUP_EMBED,
   DEFAULT_STARTUP_EMBED,
   getDefaultEmbed,
   isLegacyReleaseEmbed,
+  isLegacySetupEmbed,
   isLegacyStartupEmbed,
 };

@@ -1,23 +1,50 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
+const { DEFAULT_SETUP_EMBED, isLegacySetupEmbed } = require('../../utils/defaultEmbeds');
+const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('setup')
-    .setDescription('Quickly set up the server with a simple embed.'),
+    .setDescription('Post the setup notice'),
   async execute(interaction) {
     try {
-      const settings = await Settings.findOne({ guildId: interaction.guild.id });
+      const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
+      let settings = await Settings.findOne({ guildId: interaction.guild.id });
+
+      if (!settings) {
+        settings = await Settings.create({
+          guildId: interaction.guild.id,
+          embedcolor: '#ab6cc4',
+          setupEmbed: DEFAULT_SETUP_EMBED,
+        });
+      }
+
+      if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings.staffRoleId)) {
+        return interaction.reply({ content: 'You must have the Staff role.', flags: 64 });
+      }
+
+      if (isLegacySetupEmbed(settings.setupEmbed)) {
+        settings.setupEmbed = DEFAULT_SETUP_EMBED;
+        await settings.save();
+      }
+
       const embedColor = settings?.embedcolor || '#155fa0';
+      const setupTemplate = settings.setupEmbed || DEFAULT_SETUP_EMBED;
       const embed = new EmbedBuilder()
-        .setTitle('> <a:load:1489298699669737482> **Greenville Avenue, Setup!**<a:load:1489298699669737482>')
-        .setDescription('<a:arrow3:1489298553942708364> {user} is offically setting up! Please do **NOT** ping host. Please patiently wait for **Host** to release early access for, server boosters, staff team, and public services and anyone with the early access role. This setup should take roguhly **5-10** minutes untill Early Access. Please wait untill then.')
+        .setTitle((setupTemplate.title || DEFAULT_SETUP_EMBED.title).replace(/\$user/g, `<@${interaction.user.id}>`))
+        .setDescription((setupTemplate.description || DEFAULT_SETUP_EMBED.description).replace(/\$user/g, `<@${interaction.user.id}>`))
         .setColor(embedColor)
         .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
-      await interaction.reply({ embeds: [embed], ephemeral: false });
+
+      if ((setupTemplate.image || DEFAULT_SETUP_EMBED.image)?.startsWith('http')) {
+        embed.setImage(setupTemplate.image || DEFAULT_SETUP_EMBED.image);
+      }
+
+      await interaction.reply({ embeds: [embed] });
     } catch (error) {
       if (!interaction.replied && !interaction.deferred) {
-        await interaction.reply({ content: '❌ Error running setup command.', ephemeral: true });
+        await interaction.reply({ content: '❌ Error running setup command.', flags: 64 });
       } else {
         await interaction.editReply({ content: '❌ Error running setup command.' });
       }

@@ -7,7 +7,7 @@ const {
     EmbedBuilder 
 } = require('discord.js');
 const Settings = require('../models/settings');
-const { getDefaultEmbed, isLegacyReleaseEmbed, isLegacyStartupEmbed } = require('../utils/defaultEmbeds');
+const { getDefaultEmbed, isLegacyReleaseEmbed, isLegacySetupEmbed, isLegacyStartupEmbed } = require('../utils/defaultEmbeds');
 
 async function updateSetting(guildId, field, value) {
     let doc = await Settings.findOne({ guildId });
@@ -114,6 +114,7 @@ module.exports = {
                                 .setPlaceholder('Select embed category')
                                 .addOptions([
                                     { label: 'Startup Embed', value: 'startupEmbed' },
+                                    { label: 'Setup Embed', value: 'setupEmbed' },
                                     { label: 'EA Embed', value: 'eaEmbed' },
                                     { label: 'Giveaway Embed', value: 'giveawayEmbed' },
                                     { label: 'Welcome Embed', value: 'welcomeEmbed' },
@@ -207,6 +208,7 @@ module.exports = {
                 const field = interaction.values[0];
                 const currentEmbed = (
                     (field === 'startupEmbed' && isLegacyStartupEmbed(settings?.[field])) ||
+                    (field === 'setupEmbed' && isLegacySetupEmbed(settings?.[field])) ||
                     (field === 'releaseEmbed' && isLegacyReleaseEmbed(settings?.[field]))
                 )
                     ? getDefaultEmbed(field)
