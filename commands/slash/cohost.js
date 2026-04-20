@@ -3,6 +3,7 @@ const Settings = require('../../models/settings');
 const SessionLog = require('../../models/sessionlog');
 const { activeStartupSessions } = require('./startup');
 const { v4: uuidv4 } = require('uuid');
+const { DEFAULT_COHOST_EMBED } = require('../../utils/defaultEmbeds');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -30,10 +31,10 @@ module.exports = {
       }
     }
 
-    const cohostTemplate = settings?.cohostEmbed || {};
+    const cohostTemplate = settings?.cohostEmbed || DEFAULT_COHOST_EMBED;
     const cohostEmbed = new EmbedBuilder()
-      .setTitle(cohostTemplate.title || 'Data not found')
-      .setDescription(cohostTemplate.description?.replace(/\$user/g, `<@${userId}>`) || 'Data was not found, please use `/settings` to configure the Embed')
+      .setTitle(cohostTemplate.title || DEFAULT_COHOST_EMBED.title)
+      .setDescription((cohostTemplate.description || DEFAULT_COHOST_EMBED.description).replace(/\$user/g, `<@${userId}>`))
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
     if (cohostTemplate.image?.startsWith('http')) cohostEmbed.setImage(cohostTemplate.image);
