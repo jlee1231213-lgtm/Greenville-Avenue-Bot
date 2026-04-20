@@ -31,7 +31,15 @@ module.exports = {
       }
     }
 
-    const cohostTemplate = settings?.cohostEmbed || DEFAULT_COHOST_EMBED;
+    if (settings && settings.cohostEmbedVersion !== 1) {
+      settings.cohostEmbed = DEFAULT_COHOST_EMBED;
+      settings.cohostEmbedVersion = 1;
+      await settings.save();
+    }
+
+    const cohostTemplate = settings?.cohostEmbedVersion === 1
+      ? settings.cohostEmbed
+      : DEFAULT_COHOST_EMBED;
     const cohostEmbed = new EmbedBuilder()
       .setTitle(cohostTemplate.title || DEFAULT_COHOST_EMBED.title)
       .setDescription((cohostTemplate.description || DEFAULT_COHOST_EMBED.description).replace(/\$user/g, `<@${userId}>`))
