@@ -23,62 +23,59 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageChannels)
     .setDescription('Open a ticket support dropdown.'),
   async execute(interaction) {
-    try {
-      const settings = await Settings.findOne({ guildId: interaction.guild.id });
-      const embedColor = settings?.embedcolor || '#ff7f25';
-      const panelConfig = {
-        ...DEFAULT_PANEL,
-        ...(settings?.ticketSupportEmbed || {})
-      };
+    const channelid = `${interaction.channel.id}`
+    const settings = await Settings.findOne({ guildId: interaction.guild.id });
+    const embedColor = settings?.embedcolor || '#ff7f25';
+    const panelConfig = {
+      ...DEFAULT_PANEL,
+      ...(settings?.ticketSupportEmbed || {})
+    };
 
-      await interaction.deferReply({ flags: 64 });
+ 
+    await interaction.deferReply(); 
 
-      const embed = new EmbedBuilder()
-        .setTitle(panelConfig.title || DEFAULT_PANEL.title)
-        .setDescription(panelConfig.description || DEFAULT_PANEL.description)
-        .setColor(embedColor)
-        .setFooter({
-          text: interaction.guild.name,
-          iconURL: interaction.guild.iconURL() || undefined
-        });
 
-      if (typeof panelConfig.image === 'string' && panelConfig.image.startsWith('http')) {
-        embed.setImage(panelConfig.image);
-      }
+    const embed = new EmbedBuilder()
+      .setTitle(panelConfig.title)
+      .setDescription(panelConfig.description)
+      .setColor(embedColor)
+      .setImage(panelConfig.image || null)
+      .setFooter({ 
+        text: `${interaction.guild.name}`,
+        iconURL: interaction.guild.iconURL() || undefined
+      });
 
-      const row = new ActionRowBuilder()
-        .addComponents(
-          new StringSelectMenuBuilder()
-            .setCustomId('supportOptions')
-            .setPlaceholder(panelConfig.placeholder || DEFAULT_PANEL.placeholder)
-            .addOptions([
-              {
-                label: 'General Assistance',
-                description: 'Open a ticket to ask for help.',
-                value: 'st',
-              },
-              {
-                label: 'Member Report',
-                description: 'Open a ticket to report a member.',
-                value: 'mr',
-              },
-              {
-                label: 'Staff Report',
-                description: 'Open a ticket to report a staff member.',
-                value: 'ma',
-              },
-            ])
-        );
 
-      await interaction.channel.send({ embeds: [embed], components: [row] });
-      await interaction.editReply({ content: 'The support ticket options have been sent.' });
-    } catch (error) {
-      console.error('Error running ticketsupport command:', error);
-      if (interaction.deferred || interaction.replied) {
-        await interaction.editReply({ content: '❌ Error running ticketsupport command.' }).catch(() => {});
-      } else {
-        await interaction.reply({ content: '❌ Error running ticketsupport command.', flags: 64 }).catch(() => {});
-      }
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId('supportOptions')
+          .setPlaceholder(panelConfig.placeholder || DEFAULT_PANEL.placeholder)
+          .addOptions([
+            {
+              label: 'General Assistance',
+              description: `Open a ticket to ask a question.`,
+              value: 'st',
+            },
+            {
+              label: 'Member Report',
+              description: 'Open a ticket to report a member.',
+              value: 'mr',
+            },
+            {
+              label: 'Staff Report',
+              description: 'Open a ticket to report a staff member.',
+              value: 'ma',
+            },
+          ])
+      );
+
+    const supportChannel = interaction.guild.channels.cache.get(`${channelid}`);
+    if (supportChannel) {
+      await supportChannel.send({ embeds: [embed], components: [row] });
+      await interaction.followUp({ content: 'The support ticket options have been sent.', ephemeral: true });
+    } else {
+      await interaction.followUp({ content: 'Unable to find the support channel.', ephemeral: true });
     }
   },
 };
