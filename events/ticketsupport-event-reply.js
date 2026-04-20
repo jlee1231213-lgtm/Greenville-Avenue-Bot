@@ -13,6 +13,7 @@ const {
 const discordTranscripts = require('@fluxbot/discord-html-transcripts');
 const Ticket = require('../models/support');
 const Settings = require('../models/settings');
+const { getConfiguredRoleIds } = require('../utils/roleHelpers');
 
 const TICKET_TYPE_META = {
   st: {
@@ -51,6 +52,19 @@ function buildFormatBlock(typeMeta) {
     ...typeMeta.formatLines,
     '```'
   ].join('\n');
+}
+
+function getTicketSupportRoleIds(guild, settings, type) {
+  const configuredRoleIds = [
+    ...new Set(getConfiguredRoleIds(settings?.staffRoleId, settings?.adminRoleId))
+  ].filter(roleId => guild.roles.cache.has(roleId));
+
+  if (configuredRoleIds.length > 0) {
+    return configuredRoleIds;
+  }
+
+  const legacyFallbackRoleId = type === 'st' ? '1417661969863020583' : '1417663103369478325';
+  return guild.roles.cache.has(legacyFallbackRoleId) ? [legacyFallbackRoleId] : [];
 }
 
 async function getOrCreateTicketData(interaction) {
@@ -148,16 +162,19 @@ module.exports = {
         const ownerId = interaction.user.id;
         const guild = interaction.guild;
         const ticketName = `${type}_${ownerId}_ticket`;
-        let roleId = type === 'st' ? '1417661969863020583' : '1417663103369478325';
         const everyone = guild.roles.everyone;
-        if (!guild.roles.cache.has(roleId)) roleId = ownerId;
+        const supportRoleIds = getTicketSupportRoleIds(guild, settings, type);
 
         const permissionOverwrites = [
           { id: everyone.id, deny: [PermissionsBitField.Flags.ViewChannel] },
           { id: ownerId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
         ];
-        if (roleId !== ownerId) {
-          permissionOverwrites.push({ id: roleId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
+
+        for (const roleId of supportRoleIds) {
+          permissionOverwrites.push({
+            id: roleId,
+            allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
+          });
         }
 
         const ticketChannel = await guild.channels.create({
@@ -215,15 +232,20 @@ module.exports = {
       const claimBtn = new ButtonBuilder().setCustomId('claimTicket').setLabel('Claim').setStyle(ButtonStyle.Success);
       const closeBtn = new ButtonBuilder().setCustomId('closeTicket').setLabel('Close').setStyle(ButtonStyle.Danger);
       const row = new ActionRowBuilder().addComponents(claimBtn, closeBtn);
+      const supportRoleMentions = supportRoleIds.map(roleId => `<@&${roleId}>`).join(' ');
 
-      const msg = await ticketChannel.send({ content: `<@${ownerId}> <@&${roleId}>`, embeds: [embed], components: [row] });
+      const msg = await ticketChannel.send({
+        content: [ `<@${ownerId}>`, supportRoleMentions ].filter(Boolean).join(' '),
+        embeds: [embed],
+        components: [row]
+      });
       await msg.pin();
 
       await Ticket.create({
         guildId: guild.id,
         channelId: ticketChannel.id,
         ownerId,
-        roleId,
+        roleId: supportRoleIds.join(','),
         type,
         lastOwnerMessageAt: new Date(),
         inactivityWarningSentAt: null,
@@ -261,7 +283,6 @@ module.exports = {
         ticketData.claimed = interaction.user.id;
         await ticketData.save();
 
-        await interaction.channel.permissionOverwrites.edit(ticketData.roleId, { ViewChannel: false });
         await interaction.channel.permissionOverwrites.edit(interaction.user.id, { ViewChannel: true, SendMessages: true });
 
         const row = new ActionRowBuilder()
@@ -284,7 +305,6 @@ module.exports = {
         ticketData.claimed = null;
         await ticketData.save();
 
-        await interaction.channel.permissionOverwrites.edit(ticketData.roleId, { ViewChannel: true });
         await interaction.channel.permissionOverwrites.edit(interaction.user.id, { ViewChannel: true, SendMessages: true });
 
         const row = new ActionRowBuilder()
