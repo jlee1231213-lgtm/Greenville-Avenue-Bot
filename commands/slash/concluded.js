@@ -1,5 +1,15 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
+const StartupSession = require('../../models/startupsession');
+const { activeStartupSessions } = require('./startup');
+const { DEFAULT_RELEASE_EMBED, DEFAULT_STARTUP_EMBED } = require('../../utils/defaultEmbeds');
+
+const DEFAULT_REINVITES_TITLE = '<:gvi_confetti:1493952437642461254> **__Greenville Avenue — Session Re-Invites__**';
+
+async function deleteIfPossible(message) {
+    if (!message || !message.deletable) return;
+    await message.delete().catch(() => {});
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -38,6 +48,57 @@ module.exports = {
         const endTime = interaction.options.getString('end_time');
         const duration = interaction.options.getString('duration');
         const notes = interaction.options.getString('notes') || 'No notes provided.';
+
+        const startupTitle = settings?.startupEmbed?.title || DEFAULT_STARTUP_EMBED.title;
+        const setupTitle = settings?.setupEmbed?.title || null;
+        const cohostTitle = settings?.cohostEmbed?.title || null;
+        const releaseTitle = settings?.releaseEmbed?.title || DEFAULT_RELEASE_EMBED.title;
+        const reinvitesTitle = settings?.reinvitesEmbed?.title || DEFAULT_REINVITES_TITLE;
+        const recentMessages = await interaction.channel.messages.fetch({ limit: 100 }).catch(() => null);
+        const latestStartupSession = await StartupSession.findOne({
+            guildId: interaction.guild.id,
+            channelId: interaction.channel.id
+        }).sort({ createdAt: -1 });
+
+        const messageIdsToDelete = new Set();
+        if (latestStartupSession?.messageId) {
+            messageIdsToDelete.add(latestStartupSession.messageId);
+        }
+
+        for (const [, data] of activeStartupSessions.entries()) {
+            if (!data?.messageId) continue;
+            if (data.type === 'session' || data.type === 'cohost') {
+                messageIdsToDelete.add(data.messageId);
+            }
+        }
+
+        if (recentMessages) {
+            for (const [, message] of recentMessages) {
+                if (message.author?.id !== interaction.client.user.id) continue;
+
+                const customIds = message.components.flatMap(row => row.components.map(component => component.customId)).filter(Boolean);
+                const embedTitles = message.embeds.map(embed => embed.title).filter(Boolean);
+                const isSessionReply = latestStartupSession?.messageId && message.reference?.messageId === latestStartupSession.messageId;
+                const matchesKnownTitle = embedTitles.some(title => [startupTitle, setupTitle, cohostTitle, releaseTitle, reinvitesTitle].filter(Boolean).includes(title));
+                const isSessionComponentMessage = customIds.includes('getlink') || customIds.includes('reinvites_link');
+
+                if (isSessionReply || matchesKnownTitle || isSessionComponentMessage) {
+                    messageIdsToDelete.add(message.id);
+                }
+            }
+        }
+
+        for (const messageId of messageIdsToDelete) {
+            const message = recentMessages?.get(messageId) || await interaction.channel.messages.fetch(messageId).catch(() => null);
+            await deleteIfPossible(message);
+        }
+
+        if (latestStartupSession) {
+            await StartupSession.deleteMany({
+                guildId: interaction.guild.id,
+                channelId: interaction.channel.id,
+            }).catch(() => {});
+        }
 
         const embed = new EmbedBuilder()
             .setColor(embedColor)
