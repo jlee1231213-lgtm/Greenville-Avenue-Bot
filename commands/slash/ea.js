@@ -130,7 +130,7 @@ module.exports = {
       }
 
       await i.reply({
-        embeds: [new EmbedBuilder().setDescription(`[Click here to join the session](${sessionLink})`).setColor(embedColor)],
+        embeds: [new EmbedBuilder().setDescription(`Session Link: ${sessionLink}`).setColor(embedColor)],
         ephemeral: true
       });
 
