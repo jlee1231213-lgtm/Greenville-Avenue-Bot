@@ -3,7 +3,7 @@ const path = require('path');
 const { REST, Routes } = require('discord.js');
 const { isVisibleSlashCommand } = require('../visibleSlashCommands');
 
-const DEPLOY_GUILD_ID = '1443224410256314528';
+const DEPLOY_GUILD_ID = process.env.GUILD_ID?.trim() || null;
 
 function findSlashCommandsPath() {
     const candidates = [
@@ -23,6 +23,11 @@ function findSlashCommandsPath() {
 async function deployGuildCommands(client) {
     if (!process.env.TOKEN) {
         console.warn('[WARN] Testing mode is enabled, but TOKEN is missing. Skipping command deploy.');
+        return;
+    }
+
+    if (!DEPLOY_GUILD_ID) {
+        console.warn('[WARN] GUILD_ID is missing. Skipping guild slash command deploy.');
         return;
     }
 
