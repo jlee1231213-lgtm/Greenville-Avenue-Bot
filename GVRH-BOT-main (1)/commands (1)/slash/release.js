@@ -90,7 +90,7 @@ module.exports = {
       new ButtonBuilder()
         .setCustomId("getlink")
         .setLabel('Link')
-        .setStyle(ButtonStyle.Primary)
+        .setStyle(ButtonStyle.Success)
     );
 
     const message = await interaction.channel.send({
