@@ -79,8 +79,16 @@ module.exports = {
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    if ((eaTemplate.image || DEFAULT_EA_EMBED.image)?.startsWith('http')) embed.setImage(eaTemplate.image || DEFAULT_EA_EMBED.image);
-    if (eaTemplate.thumbnail?.startsWith('http')) embed.setThumbnail(eaTemplate.thumbnail);
+    const imageUrl = eaTemplate.image || DEFAULT_EA_EMBED.image;
+    const thumbnailUrl = eaTemplate.thumbnail || DEFAULT_EA_EMBED.thumbnail;
+
+    if (typeof imageUrl === 'string' && /^https?:\/\//.test(imageUrl)) {
+      embed.setImage(imageUrl);
+    }
+
+    if (typeof thumbnailUrl === 'string' && /^https?:\/\//.test(thumbnailUrl)) {
+      embed.setThumbnail(thumbnailUrl);
+    }
 
       const button = new ButtonBuilder().setCustomId('get_ealink').setLabel('Get Link').setEmoji({ id: '1489643253681754112', name: 'BlueLine_chain' }).setStyle(ButtonStyle.Success);
     const row = new ActionRowBuilder().addComponents(button);

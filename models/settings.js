@@ -18,19 +18,19 @@ const settingsSchema = new mongoose.Schema({
       cap: { type: Number, required: true }
     }
   ],
-  startupEmbed: { title: String, description: String, image: String },
+  startupEmbed: { title: String, description: String, image: String, thumbnail: String },
   cohostEmbedVersion: { type: Number, default: 0 },
   eaEmbedVersion: { type: Number, default: 0 },
-  eaEmbed: { title: String, description: String, image: String },
-  giveawayEmbed: { title: String, description: String, image: String },
-  welcomeEmbed: { title: String, description: String, image: String },
-  cohostEmbed: { title: String, description: String, image: String },
-  cohostendEmbed: { title: String, description: String, image: String },
-  ticketSupportEmbed: { title: String, description: String, image: String, placeholder: String },
-  setupEmbed: { title: String, description: String, image: String },
-  releaseEmbed: { title: String, description: String, image: String },
-  reinvitesEmbed: { title: String, description: String, image: String },
-  overEmbed: { title: String, description: String, image: String },
+  eaEmbed: { title: String, description: String, image: String, thumbnail: String },
+  giveawayEmbed: { title: String, description: String, image: String, thumbnail: String },
+  welcomeEmbed: { title: String, description: String, image: String, thumbnail: String },
+  cohostEmbed: { title: String, description: String, image: String, thumbnail: String },
+  cohostendEmbed: { title: String, description: String, image: String, thumbnail: String },
+  ticketSupportEmbed: { title: String, description: String, image: String, thumbnail: String, placeholder: String },
+  setupEmbed: { title: String, description: String, image: String, thumbnail: String },
+  releaseEmbed: { title: String, description: String, image: String, thumbnail: String },
+  reinvitesEmbed: { title: String, description: String, image: String, thumbnail: String },
+  overEmbed: { title: String, description: String, image: String, thumbnail: String },
 });
 
 module.exports = mongoose.models.Settings || mongoose.model('Settings', settingsSchema);
