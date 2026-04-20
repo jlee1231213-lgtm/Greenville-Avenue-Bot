@@ -94,58 +94,71 @@ module.exports = {
 
     const collector = earlyAccessMessage.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3600000 });
     collector.on('collect', async i => {
-      if (!memberHasAnyConfiguredRole(i.member, settings.eaRoleId, settings.staffRoleId, settings.adminRoleId, settings.leoRoleId)) {
-        return i.reply({
-          embeds: [new EmbedBuilder().setDescription('You do not have the required role.').setColor(embedColor)],
-          ephemeral: true
-        });
-      }
+      if (i.customId !== 'get_ealink') return;
 
-      const startup = await StartupSession.findOne({ guildId: i.guild.id }).sort({ createdAt: -1 });
-      if (!startup) {
-        return i.reply({
-          embeds: [new EmbedBuilder().setDescription('Startup message not found. Please ask a host to initiate one.').setColor(embedColor)],
-          ephemeral: true
-        });
-      }
+      await i.deferReply({ ephemeral: true });
 
-      const startupChannel = await interaction.client.channels.fetch(startup.channelId);
-      const startupMsg = await startupChannel.messages.fetch(startup.messageId).catch(() => null);
-      if (!startupMsg) {
-        return i.reply({
-          embeds: [new EmbedBuilder().setDescription('Startup message no longer exists.').setColor(embedColor)],
-          ephemeral: true
-        });
-      }
+      try {
+        if (!memberHasAnyConfiguredRole(i.member, settings.eaRoleId, settings.staffRoleId, settings.adminRoleId, settings.leoRoleId)) {
+          return i.editReply({
+            embeds: [new EmbedBuilder().setDescription('You do not have the required role.').setColor(embedColor)]
+          });
+        }
 
-      const reaction = startupMsg.reactions.cache.find(entry => entry.emoji.id === STARTUP_REACTION_ID || entry.emoji.name === STARTUP_REACTION_FALLBACK);
-      if (!reaction || !(await reaction.users.fetch()).has(i.user.id)) {
-        return i.reply({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle('Reaction Required')
-              .setDescription(`You must react to the [startup message](https://discord.com/channels/${i.guild.id}/${startup.channelId}/${startup.messageId}) to get access.`)
-              .setColor(embedColor)
-          ],
-          ephemeral: true
-        });
-      }
+        const startup = await StartupSession.findOne({ guildId: i.guild.id }).sort({ createdAt: -1 });
+        if (!startup) {
+          return i.editReply({
+            embeds: [new EmbedBuilder().setDescription('Startup message not found. Please ask a host to initiate one.').setColor(embedColor)]
+          });
+        }
 
-      await i.reply({
-        embeds: [new EmbedBuilder().setDescription(`Session Link: ${sessionLink}`).setColor(embedColor)],
-        ephemeral: true
-      });
+        const startupChannel = await interaction.client.channels.fetch(startup.channelId).catch(() => null);
+        if (!startupChannel?.isTextBased()) {
+          return i.editReply({
+            embeds: [new EmbedBuilder().setDescription('Startup channel could not be accessed.').setColor(embedColor)]
+          });
+        }
 
-      if (logChannel) {
-        logChannel.send({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle('Early Access Link Used')
-              .setDescription(`<@${i.user.id}> used the EA button in <#${interaction.channel.id}>`)
-              .setColor(embedColor)
-              .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined })
-          ]
+        const startupMsg = await startupChannel.messages.fetch(startup.messageId).catch(() => null);
+        if (!startupMsg) {
+          return i.editReply({
+            embeds: [new EmbedBuilder().setDescription('Startup message no longer exists.').setColor(embedColor)]
+          });
+        }
+
+        const reaction = startupMsg.reactions.cache.find(entry => entry.emoji.id === STARTUP_REACTION_ID || entry.emoji.name === STARTUP_REACTION_FALLBACK);
+        const users = reaction ? await reaction.users.fetch().catch(() => null) : null;
+        if (!reaction || !users?.has(i.user.id)) {
+          return i.editReply({
+            embeds: [
+              new EmbedBuilder()
+                .setTitle('Reaction Required')
+                .setDescription(`You must react to the [startup message](https://discord.com/channels/${i.guild.id}/${startup.channelId}/${startup.messageId}) to get access.`)
+                .setColor(embedColor)
+            ]
+          });
+        }
+
+        await i.editReply({
+          embeds: [new EmbedBuilder().setDescription(`Session Link: ${sessionLink}`).setColor(embedColor)]
         });
+
+        if (logChannel) {
+          logChannel.send({
+            embeds: [
+              new EmbedBuilder()
+                .setTitle('Early Access Link Used')
+                .setDescription(`<@${i.user.id}> used the EA button in <#${interaction.channel.id}>`)
+                .setColor(embedColor)
+                .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined })
+            ]
+          }).catch(() => {});
+        }
+      } catch (err) {
+        console.error('EA button interaction failed:', err);
+        await i.editReply({
+          embeds: [new EmbedBuilder().setDescription('An error occurred while verifying access.').setColor(embedColor)]
+        }).catch(() => {});
       }
     });
   }
