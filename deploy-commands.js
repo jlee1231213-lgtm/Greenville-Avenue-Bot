@@ -38,15 +38,26 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
     try {
         console.log('🔄 Refreshing application (/) commands...');
 
+        const deployGuildId = process.env.GUILD_ID?.trim();
+        if (deployGuildId) {
+            await rest.put(
+                Routes.applicationGuildCommands(
+                    process.env.CLIENT_ID,
+                    deployGuildId
+                ),
+                { body: commands }
+            );
+
+            console.log(`✅ Successfully registered ${commands.length} guild commands to ${deployGuildId}.`);
+            return;
+        }
+
         await rest.put(
-            Routes.applicationGuildCommands(
-                process.env.CLIENT_ID,
-                process.env.GUILD_ID
-            ),
+            Routes.applicationCommands(process.env.CLIENT_ID),
             { body: commands }
         );
 
-        console.log(`✅ Successfully registered ${commands.length} commands.`);
+        console.log(`✅ Successfully registered ${commands.length} global commands because GUILD_ID is not set.`);
     } catch (error) {
         console.error(error);
     }

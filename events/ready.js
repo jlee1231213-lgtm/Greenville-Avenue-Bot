@@ -3,8 +3,6 @@ const path = require('path');
 const { REST, Routes } = require('discord.js');
 const { isVisibleSlashCommand } = require('../visibleSlashCommands');
 
-const DEPLOY_GUILD_ID = process.env.GUILD_ID?.trim() || null;
-
 function findSlashCommandsPath() {
     const candidates = [
         path.join(__dirname, '..', 'commands', 'slash'),
@@ -23,11 +21,6 @@ function findSlashCommandsPath() {
 async function deployGuildCommands(client) {
     if (!process.env.TOKEN) {
         console.warn('[WARN] Testing mode is enabled, but TOKEN is missing. Skipping command deploy.');
-        return;
-    }
-
-    if (!DEPLOY_GUILD_ID) {
-        console.warn('[WARN] GUILD_ID is missing. Skipping guild slash command deploy.');
         return;
     }
 
@@ -68,11 +61,21 @@ async function deployGuildCommands(client) {
         console.warn(error?.message || error);
     }
 
+    const deployGuildId = process.env.GUILD_ID?.trim();
+    if (deployGuildId) {
+        await rest.put(
+            Routes.applicationGuildCommands(client.application.id, deployGuildId),
+            { body: commands },
+        );
+        console.log(`[INFO] Testing mode: deployed ${commands.length} guild slash commands to ${deployGuildId}`);
+        return;
+    }
+
     await rest.put(
-        Routes.applicationGuildCommands(client.application.id, DEPLOY_GUILD_ID),
+        Routes.applicationCommands(client.application.id),
         { body: commands },
     );
-    console.log(`[INFO] Testing mode: deployed ${commands.length} guild slash commands to ${DEPLOY_GUILD_ID}`);
+    console.log(`[INFO] Testing mode: deployed ${commands.length} global slash commands because GUILD_ID is not set`);
 }
 
 module.exports = {
