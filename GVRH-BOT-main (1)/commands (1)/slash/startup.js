@@ -8,6 +8,11 @@ const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 const activeStartupSessions = new Map();
 const STARTUP_REACTION_ID = '1493951094605353062';
+const STARTUP_REACTION_FALLBACK = '✅';
+
+function isStartupReaction(reaction) {
+  return reaction?.emoji?.id === STARTUP_REACTION_ID || reaction?.emoji?.name === STARTUP_REACTION_FALLBACK;
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -69,7 +74,11 @@ module.exports = {
     if (startupTemplate.image && startupTemplate.image.startsWith('http')) embed.setImage(startupTemplate.image);
 
     const message = await interaction.channel.send({ content: '@everyone', embeds: [embed] });
-    await message.react(STARTUP_REACTION_ID);
+    try {
+      await message.react(STARTUP_REACTION_ID);
+    } catch {
+      await message.react(STARTUP_REACTION_FALLBACK).catch(() => {});
+    }
 
     const sessionId = uuidv4();
     activeStartupSessions.set(sessionId, { userId, timestamp: now, type: 'session', messageId: message.id });
@@ -78,11 +87,11 @@ module.exports = {
 
     await interaction.editReply({ content: 'Session started successfully.' });
 
-    const filter = (reaction, user) => reaction.emoji.id === STARTUP_REACTION_ID && !user.bot;
+    const filter = (reaction, user) => isStartupReaction(reaction) && !user.bot;
     const collector = message.createReactionCollector({ filter, max: reactionsRequired, time: 1000 * 60 * 60 }); 
 
     collector.on('collect', async () => {
-      const reactionCount = message.reactions.cache.find(reaction => reaction.emoji.id === STARTUP_REACTION_ID)?.count || 0;
+      const reactionCount = message.reactions.cache.find(isStartupReaction)?.count || 0;
       if (reactionCount - 1 >= reactionsRequired) {
         collector.stop();
 

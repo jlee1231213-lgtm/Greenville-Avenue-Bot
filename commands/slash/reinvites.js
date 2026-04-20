@@ -3,6 +3,7 @@ const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 const STARTUP_REACTION_ID = '1493951094605353062';
+const STARTUP_REACTION_FALLBACK = '✅';
 
 const DEFAULT_REINVITES_TEMPLATE = {
   title: '<:gvi_confetti:1493952437642461254> **__Greenville Avenue — Session Re-Invites__**',
@@ -131,7 +132,7 @@ module.exports = {
         const message = await channel.messages.fetch(lastSession.messageId).catch(() => null);
         if (!message) return btnInteraction.reply({ content: 'Startup message no longer exists.', ephemeral: true });
 
-        const reacted = await message.reactions.cache.find(entry => entry.emoji.id === STARTUP_REACTION_ID)?.users.fetch();
+        const reacted = await message.reactions.cache.find(entry => entry.emoji.id === STARTUP_REACTION_ID || entry.emoji.name === STARTUP_REACTION_FALLBACK)?.users.fetch();
         if (reacted && reacted.has(btnInteraction.user.id)) {
           if (!btnInteraction.replied) await btnInteraction.reply({ content: `Session Link: ${sessionLink}`, ephemeral: true });
         } else {
