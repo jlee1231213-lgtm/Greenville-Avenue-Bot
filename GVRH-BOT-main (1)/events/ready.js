@@ -29,25 +29,43 @@ async function deployGuildCommands(client) {
     const commandFiles = fs.readdirSync(slashPath).filter(file => file.endsWith('.js'));
 
     for (const file of commandFiles) {
-        const command = require(path.join(slashPath, file));
-        if (command?.data?.name && isVisibleSlashCommand(command.data.name)) {
+        try {
+            const command = require(path.join(slashPath, file));
+            if (!command?.data?.name) {
+                console.warn(`[WARN] Skipping command file without data.name: ${file}`);
+                continue;
+            }
+
+            if (!isVisibleSlashCommand(command.data.name)) {
+                continue;
+            }
+
             commands.push(command.data.toJSON());
+        } catch (error) {
+            console.error(`[ERROR] Failed to prepare slash command for deploy: ${file}`);
+            console.error(error);
         }
     }
 
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
     // Remove old global commands during testing to avoid duplicate command listings.
-    await rest.put(
-        Routes.applicationCommands(client.application.id),
-        { body: [] },
-    );
+    try {
+        await rest.put(
+            Routes.applicationCommands(client.application.id),
+            { body: [] },
+        );
+        console.log('[INFO] Cleared global application commands.');
+    } catch (error) {
+        console.warn('[WARN] Failed to clear global application commands. Continuing with guild deploy.');
+        console.warn(error?.message || error);
+    }
 
     await rest.put(
         Routes.applicationGuildCommands(client.application.id, process.env.GUILD_ID),
         { body: commands },
     );
-    console.log(`[INFO] Testing mode: cleared global commands and deployed ${commands.length} guild slash commands to ${process.env.GUILD_ID}`);
+    console.log(`[INFO] Testing mode: deployed ${commands.length} guild slash commands to ${process.env.GUILD_ID}`);
 }
 
 module.exports = {
