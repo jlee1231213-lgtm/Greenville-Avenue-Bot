@@ -3,6 +3,7 @@ const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
 const { DEFAULT_RELEASE_EMBED, isLegacyReleaseEmbed } = require('../../utils/defaultEmbeds');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
+const STARTUP_REACTION_ID = '1493951094605353062';
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -136,7 +137,7 @@ module.exports = {
         });
       }
 
-      const reaction = startupMsg.reactions.cache.get('✅');
+      const reaction = startupMsg.reactions.cache.find(entry => entry.emoji.id === STARTUP_REACTION_ID);
       const users = reaction ? await reaction.users.fetch() : null;
       if (!reaction || !users.has(i.user.id)) {
         return i.editReply({

@@ -15,6 +15,9 @@ const Ticket = require('../models/support');
 const Settings = require('../models/settings');
 const { getConfiguredRoleIds } = require('../utils/roleHelpers');
 
+const TICKET_CATEGORY_ID = '1463252878666760316';
+const TRANSCRIPT_CHANNEL_ID = '1495629716395266129';
+
 const TICKET_TYPE_META = {
   st: {
     label: 'General Assistance',
@@ -180,6 +183,7 @@ module.exports = {
         const ticketChannel = await guild.channels.create({
           name: ticketName,
           type: ChannelType.GuildText,
+          parent: guild.channels.cache.has(TICKET_CATEGORY_ID) ? TICKET_CATEGORY_ID : undefined,
           permissionOverwrites
         });
 
@@ -277,6 +281,7 @@ module.exports = {
         return;
       }
       const logChannel = interaction.guild.channels.cache.get('1417296613839339621');
+      const transcriptChannel = interaction.guild.channels.cache.get(TRANSCRIPT_CHANNEL_ID);
 
       if (interaction.customId === 'claimTicket') {
 
@@ -345,7 +350,11 @@ module.exports = {
         const ownerMember = await interaction.guild.members.fetch(ticketData.ownerId).catch(() => null);
         if (ownerMember) ownerMember.send({ embeds: [finalEmbed], files: [transcript] }).catch(() => null);
 
-        if (logChannel) logChannel.send({ embeds: [finalEmbed], files: [transcript] });
+        if (transcriptChannel) {
+          transcriptChannel.send({ embeds: [finalEmbed], files: [transcript] }).catch(() => null);
+        } else if (logChannel) {
+          logChannel.send({ embeds: [finalEmbed], files: [transcript] }).catch(() => null);
+        }
 
         await Ticket.deleteOne({ channelId: interaction.channel.id });
         await interaction.update({ content: 'Closing ticket in 5 seconds...', embeds: [], components: [] });

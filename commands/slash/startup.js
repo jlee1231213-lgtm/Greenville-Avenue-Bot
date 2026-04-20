@@ -7,6 +7,7 @@ const { DEFAULT_SETUP_EMBED, DEFAULT_STARTUP_EMBED, isLegacySetupEmbed, isLegacy
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 const activeStartupSessions = new Map();
+const STARTUP_REACTION_ID = '1493951094605353062';
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -68,7 +69,7 @@ module.exports = {
     if (startupTemplate.image && startupTemplate.image.startsWith('http')) embed.setImage(startupTemplate.image);
 
     const message = await interaction.channel.send({ content: '@everyone', embeds: [embed] });
-    await message.react('✅');
+    await message.react(STARTUP_REACTION_ID);
 
     const sessionId = uuidv4();
     activeStartupSessions.set(sessionId, { userId, timestamp: now, type: 'session', messageId: message.id });
@@ -77,11 +78,12 @@ module.exports = {
 
     await interaction.editReply({ content: 'Session started successfully.' });
 
-    const filter = (reaction, user) => reaction.emoji.name === '✅' && !user.bot;
+    const filter = (reaction, user) => reaction.emoji.id === STARTUP_REACTION_ID && !user.bot;
     const collector = message.createReactionCollector({ filter, max: reactionsRequired, time: 1000 * 60 * 60 }); 
 
     collector.on('collect', async () => {
-      if (message.reactions.cache.get('✅')?.count - 1 >= reactionsRequired) {
+      const reactionCount = message.reactions.cache.find(reaction => reaction.emoji.id === STARTUP_REACTION_ID)?.count || 0;
+      if (reactionCount - 1 >= reactionsRequired) {
         collector.stop();
 
         const setupEmbed = new EmbedBuilder()
