@@ -55,7 +55,13 @@ async function purgeNonPinnedMessages(channel) {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('concluded')
-        .setDescription('Send a concluded session message'),
+        .setDescription('Send a concluded session message')
+        .addStringOption(option =>
+            option
+                .setName('notes')
+                .setDescription('Any host notes')
+                .setRequired(true)
+        ),
     async execute(interaction) {
         const settings = await Settings.findOne({ guildId: interaction.guild.id });
         const embedColor = settings?.embedcolor || '#ab6cc4';
@@ -70,7 +76,7 @@ module.exports = {
         const startTime = startupDate ? formatSessionTime(startupDate) : 'Unknown';
         const endTime = formatSessionTime(now);
         const duration = startupDate ? formatDuration(startupDate, now) : 'Unknown';
-        const notes = 'No notes provided.';
+        const notes = interaction.options.getString('notes', true);
         await purgeNonPinnedMessages(interaction.channel);
 
         await StartupSession.deleteMany({
