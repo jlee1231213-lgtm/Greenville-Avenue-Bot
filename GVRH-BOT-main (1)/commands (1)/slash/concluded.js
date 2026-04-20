@@ -4,6 +4,28 @@ const StartupSession = require('../../models/startupsession');
 const { activeStartupSessions } = require('./startup');
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 
+function formatSessionTime(date) {
+    return new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        month: 'numeric',
+        day: 'numeric',
+        year: 'numeric',
+    }).format(date);
+}
+
+function formatDuration(start, end) {
+    const diffMs = Math.max(0, end - start);
+    const totalMinutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h`;
+    return `${minutes}m`;
+}
+
 async function purgeNonPinnedMessages(channel) {
     let before;
 
@@ -37,20 +59,20 @@ module.exports = {
         .addStringOption(option =>
             option
                 .setName('start_time')
-                .setDescription('Session start time')
-                .setRequired(true)
+                .setDescription('Session start time, or leave blank to autofill from startup')
+                .setRequired(false)
         )
         .addStringOption(option =>
             option
                 .setName('end_time')
-                .setDescription('Session end time')
-                .setRequired(true)
+                .setDescription('Session end time, or leave blank to use now')
+                .setRequired(false)
         )
         .addStringOption(option =>
             option
                 .setName('duration')
-                .setDescription('Session duration')
-                .setRequired(true)
+                .setDescription('Session duration, or leave blank to autofill')
+                .setRequired(false)
         )
         .addStringOption(option =>
             option
@@ -63,9 +85,15 @@ module.exports = {
         const embedColor = settings?.embedcolor || '#ab6cc4';
         const imageUrl = 'https://media.discordapp.net/attachments/1450473391134871565/1492956124092039329/Screenshot_20260402_214940.jpg?ex=69dd373d&is=69dbe5bd&hm=9b392661e3f7da0bd7a522875f0d5adccf36e613e5d6f834fc04c81ffdb977b3&=&format=webp&width=2160&height=1046';
         const host = interaction.user;
-        const startTime = interaction.options.getString('start_time');
-        const endTime = interaction.options.getString('end_time');
-        const duration = interaction.options.getString('duration');
+        const latestStartupSession = await StartupSession.findOne({
+            guildId: interaction.guild.id,
+            channelId: interaction.channel.id,
+        }).sort({ createdAt: -1 });
+        const startupDate = latestStartupSession?.createdAt ? new Date(latestStartupSession.createdAt) : null;
+        const now = new Date();
+        const startTime = interaction.options.getString('start_time') || (startupDate ? formatSessionTime(startupDate) : 'Unknown');
+        const endTime = interaction.options.getString('end_time') || formatSessionTime(now);
+        const duration = interaction.options.getString('duration') || (startupDate ? formatDuration(startupDate, now) : 'Unknown');
         const notes = interaction.options.getString('notes') || 'No notes provided.';
         await purgeNonPinnedMessages(interaction.channel);
 
