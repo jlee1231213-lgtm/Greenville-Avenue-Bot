@@ -20,6 +20,7 @@ const settingsSchema = new mongoose.Schema({
   ],
   startupEmbed: { title: String, description: String, image: String },
   cohostEmbedVersion: { type: Number, default: 0 },
+  eaEmbedVersion: { type: Number, default: 0 },
   eaEmbed: { title: String, description: String, image: String },
   giveawayEmbed: { title: String, description: String, image: String },
   welcomeEmbed: { title: String, description: String, image: String },

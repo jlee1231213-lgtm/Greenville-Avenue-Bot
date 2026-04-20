@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, Comp
 const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
 const { getConfiguredRoleIds, memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
+const { DEFAULT_EA_EMBED } = require('../../utils/defaultEmbeds');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -31,7 +32,6 @@ module.exports = {
       });
     }
 
-    const allowedRoleIds = getConfiguredRoleIds(settings.eaRoleId, settings.staffRoleId, settings.adminRoleId, settings.leoRoleId);
     if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings.eaRoleId, settings.staffRoleId, settings.adminRoleId, settings.leoRoleId)) {
       return interaction.reply({
         embeds: [
@@ -47,15 +47,21 @@ module.exports = {
 
     const sessionLink = interaction.options.getString('link');
     const userMention = `<@${interaction.user.id}>`;
-    const eaTemplate = settings.eaEmbed || {};
+    if (settings.eaEmbedVersion !== 1) {
+      settings.eaEmbed = DEFAULT_EA_EMBED;
+      settings.eaEmbedVersion = 1;
+      await settings.save();
+    }
+
+    const eaTemplate = settings.eaEmbedVersion === 1 ? settings.eaEmbed : DEFAULT_EA_EMBED;
 
     const embed = new EmbedBuilder()
-      .setTitle(eaTemplate.title?.replace(/\$user/g, userMention) || 'Data not found')
-      .setDescription(eaTemplate.description?.replace(/\$user/g, userMention) || 'Data was not found, please use `/settings` to configure the Embed.')
+      .setTitle((eaTemplate.title || DEFAULT_EA_EMBED.title).replace(/\$user/g, userMention))
+      .setDescription((eaTemplate.description || DEFAULT_EA_EMBED.description).replace(/\$user/g, userMention))
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    if (eaTemplate.image?.startsWith('http')) embed.setImage(eaTemplate.image);
+    if ((eaTemplate.image || DEFAULT_EA_EMBED.image)?.startsWith('http')) embed.setImage(eaTemplate.image || DEFAULT_EA_EMBED.image);
     if (eaTemplate.thumbnail?.startsWith('http')) embed.setThumbnail(eaTemplate.thumbnail);
 
     const button = new ButtonBuilder().setCustomId('get_ealink').setLabel('Get Link').setStyle(ButtonStyle.Primary);

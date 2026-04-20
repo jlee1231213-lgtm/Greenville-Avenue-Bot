@@ -33,6 +33,15 @@ const DEFAULT_COHOST_EMBED = {
 In the event the host is unavailable, please direct any questions or requests for assistance to the co-host.`,
 };
 
+const DEFAULT_EA_EMBED = {
+  title: '<:blue_earlyentry:1493951246770372689> **__Greenville Avenue — Early Access Announcement__**',
+  description: `<:green_arrow_recolor:1489356754570580069> $user has officially launched Early Access for the Greenville Avenue experience.
+
+Members who have been granted access may now begin joining the session. Upon entry, please park your vehicle and remain stationary while awaiting further instructions from the host.
+Please note that sharing this access link with individuals who are not authorized is strictly prohibited and will result in immediate moderation actions.`,
+  image: 'https://media.discordapp.net/attachments/1450473391134871565/1489434331620573385/Screenshot_20260402_211715.jpg?ex=69e6d0d1&is=69e57f51&hm=a77f1f9b06b50de8d05ee12a0886ac7a98a75203afd0193d33a29b79e849c949&=&format=webp&width=2160&height=1030',
+};
+
 function isPlaceholderEmbed(embed, legacyTitle, legacyDescription) {
   if (!embed) return true;
 
@@ -66,6 +75,9 @@ function getDefaultEmbed(field) {
   if (field === 'cohostEmbed') {
     return { ...DEFAULT_COHOST_EMBED };
   }
+  if (field === 'eaEmbed') {
+    return { ...DEFAULT_EA_EMBED };
+  }
   if (field === 'releaseEmbed') {
     return { ...DEFAULT_RELEASE_EMBED };
   }
@@ -75,6 +87,7 @@ function getDefaultEmbed(field) {
 
 module.exports = {
   DEFAULT_COHOST_EMBED,
+  DEFAULT_EA_EMBED,
   DEFAULT_RELEASE_EMBED,
   DEFAULT_STARTUP_EMBED,
   getDefaultEmbed,
