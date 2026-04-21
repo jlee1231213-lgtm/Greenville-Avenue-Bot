@@ -2,6 +2,7 @@ const VISIBLE_SLASH_COMMANDS = new Set([
     'startup',
     'setup',
     'cohost',
+    'loa',
     'release',
     'register',
     'reinvites',
