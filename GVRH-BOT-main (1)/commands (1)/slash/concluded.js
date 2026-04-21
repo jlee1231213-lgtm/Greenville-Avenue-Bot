@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
 const StartupSession = require('../../models/startupsession');
 const { activeStartupSessions } = require('./startup');
+const { normalizeEmbedMediaUrl } = require('../../utils/embedMedia');
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 
 function formatDiscordTimestamp(date) {
@@ -58,7 +59,7 @@ module.exports = {
     async execute(interaction) {
         const settings = await Settings.findOne({ guildId: interaction.guild.id });
         const embedColor = settings?.embedcolor || '#ab6cc4';
-        const imageUrl = 'https://media.discordapp.net/attachments/1450473391134871565/1492956124092039329/Screenshot_20260402_214940.jpg?ex=69dd373d&is=69dbe5bd&hm=9b392661e3f7da0bd7a522875f0d5adccf36e613e5d6f834fc04c81ffdb977b3&=&format=webp&width=2160&height=1046';
+        const imageUrl = normalizeEmbedMediaUrl('https://media.discordapp.net/attachments/1450473391134871565/1492956124092039329/Screenshot_20260402_214940.jpg?ex=69dd373d&is=69dbe5bd&hm=9b392661e3f7da0bd7a522875f0d5adccf36e613e5d6f834fc04c81ffdb977b3&=&format=webp&width=2160&height=1046');
         const host = interaction.user;
         const latestStartupSession = await StartupSession.findOne({
             guildId: interaction.guild.id,
@@ -95,8 +96,11 @@ module.exports = {
                 `-# <:gvry_ydot:1489356230785761382> **Duration:** \`${duration}\``,
                 `-# <:gvry_ydot:1489356230785761382> **Notes:** ${notes}`
             ].join('\n'))
-            .setImage(imageUrl)
             .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
+
+        if (imageUrl) {
+            embed.setImage(imageUrl);
+        }
 
         await interaction.reply({ embeds: [embed] });
     },

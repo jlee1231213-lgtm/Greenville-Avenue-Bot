@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const Settings = require('../models/settings');
+const { setEmbedMedia } = require('../utils/embedMedia');
 
 module.exports = {
     name: 'interactionCreate',
@@ -29,8 +30,7 @@ module.exports = {
                     .setColor(embedColor)
                     .setFooter({ text: guildName, iconURL: guildIcon });
 
-                if (thumbnailUrl) embed.setThumbnail(thumbnailUrl);
-                if (imageUrl) embed.setImage(imageUrl);
+                setEmbedMedia(embed, { image: imageUrl, thumbnail: thumbnailUrl });
                 if (title) embed.setTitle(title);
 
                 await interaction.channel.send({ embeds: [embed] });

@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
+const { setEmbedMedia } = require('../../utils/embedMedia');
 
 const TEMPLATE_FIELDS = {
   startup: 'startupEmbed',
@@ -155,15 +156,10 @@ module.exports = {
       .setDescription(finalDescription)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    const finalImage = overrideImage || template.image;
-    if (finalImage && String(finalImage).startsWith('http')) {
-      embed.setImage(finalImage);
-    }
-
-    const finalThumbnail = overrideThumbnail || template.thumbnail;
-    if (finalThumbnail && String(finalThumbnail).startsWith('http')) {
-      embed.setThumbnail(finalThumbnail);
-    }
+    setEmbedMedia(embed, {
+      image: overrideImage || template.image,
+      thumbnail: overrideThumbnail || template.thumbnail,
+    });
 
     await interaction.channel.send({ content: messageContent || undefined, embeds: [embed] });
     return interaction.editReply({ content: `Sent ${templateChoice} embed.` });

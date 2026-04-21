@@ -4,6 +4,7 @@ const SessionLog = require('../../models/sessionlog');
 const { activeStartupSessions } = require('./startup');
 const { v4: uuidv4 } = require('uuid');
 const { DEFAULT_COHOST_EMBED } = require('../../utils/defaultEmbeds');
+const { setEmbedMedia } = require('../../utils/embedMedia');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -45,8 +46,7 @@ module.exports = {
       .setDescription((cohostTemplate.description || DEFAULT_COHOST_EMBED.description).replace(/\$user/g, `<@${userId}>`))
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
-    if (cohostTemplate.image?.startsWith('http')) cohostEmbed.setImage(cohostTemplate.image);
-    if (cohostTemplate.thumbnail?.startsWith('http')) cohostEmbed.setThumbnail(cohostTemplate.thumbnail);
+    setEmbedMedia(cohostEmbed, cohostTemplate);
 
     let postedMessage = null;
     if (replyTarget && replyTarget.reply) postedMessage = await replyTarget.reply({ embeds: [cohostEmbed] });

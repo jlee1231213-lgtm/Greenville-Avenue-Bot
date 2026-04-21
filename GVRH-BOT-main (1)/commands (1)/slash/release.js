@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, Butt
 const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
 const { DEFAULT_RELEASE_EMBED, isLegacyReleaseEmbed } = require('../../utils/defaultEmbeds');
+const { setEmbedMedia } = require('../../utils/embedMedia');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 const STARTUP_REACTION_ID = '1493951094605353062';
 const STARTUP_REACTION_FALLBACK = '✅';
@@ -83,8 +84,10 @@ module.exports = {
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    if ((releaseTemplate.image || DEFAULT_RELEASE_EMBED.image)?.startsWith('http')) embed.setImage(releaseTemplate.image || DEFAULT_RELEASE_EMBED.image);
-    if (releaseTemplate.thumbnail?.startsWith('http')) embed.setThumbnail(releaseTemplate.thumbnail);
+    setEmbedMedia(embed, {
+      image: releaseTemplate.image || DEFAULT_RELEASE_EMBED.image,
+      thumbnail: releaseTemplate.thumbnail,
+    });
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()

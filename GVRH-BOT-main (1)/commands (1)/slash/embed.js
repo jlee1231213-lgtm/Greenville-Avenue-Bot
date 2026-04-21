@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
+const { normalizeEmbedMediaUrl, setEmbedMedia } = require('../../utils/embedMedia');
 
 function normalizeHexColor(input, fallback) {
     if (!input) return fallback;
@@ -9,13 +10,7 @@ function normalizeHexColor(input, fallback) {
 }
 
 function isHttpUrl(value) {
-    if (!value) return false;
-    try {
-        const url = new URL(value);
-        return url.protocol === 'http:' || url.protocol === 'https:';
-    } catch {
-        return false;
-    }
+    return Boolean(normalizeEmbedMediaUrl(value));
 }
 
 module.exports = {
@@ -85,8 +80,7 @@ module.exports = {
             .setDescription(description)
             .setColor(finalColor);
 
-        if (image) embed.setImage(image);
-        if (thumbnail) embed.setThumbnail(thumbnail);
+        setEmbedMedia(embed, { image, thumbnail });
         if (footer) embed.setFooter({ text: footer });
 
         await interaction.channel.send({ content: content || undefined, embeds: [embed] });

@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRow
 const SessionLog = require('../../models/sessionlog');
 const Settings = require('../../models/settings');
 const { activeStartupSessions } = require('../slash/startup');
+const { setEmbedMedia } = require('../../utils/embedMedia');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
@@ -86,8 +87,7 @@ module.exports = {
         .setColor(embedColor)
         .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-      if (endEmbedTemplate.image?.startsWith('http')) endEmbed.setImage(endEmbedTemplate.image);
-      if (endEmbedTemplate.thumbnail?.startsWith('http')) endEmbed.setThumbnail(endEmbedTemplate.thumbnail);
+      setEmbedMedia(endEmbed, endEmbedTemplate);
 
       const button = new ButtonBuilder()
         .setCustomId('feedback')

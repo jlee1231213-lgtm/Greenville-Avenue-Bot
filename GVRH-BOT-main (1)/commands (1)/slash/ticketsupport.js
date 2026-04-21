@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, PermissionsBitField } = require('discord.js');
 const Settings = require('../../models/settings');
+const { setEmbedMedia } = require('../../utils/embedMedia');
 
 const DEFAULT_PANEL = {
   title: 'Greenville Avenue - Support Tickets',
@@ -47,9 +48,7 @@ module.exports = {
         iconURL: interaction.guild.iconURL() || undefined
       });
 
-    if (typeof panelConfig.image === 'string' && panelConfig.image.startsWith('http')) {
-      embed.setImage(panelConfig.image);
-    }
+    setEmbedMedia(embed, { image: panelConfig.image, thumbnail: panelConfig.thumbnail });
 
 
     const row = new ActionRowBuilder()

@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, Butt
 const Settings = require('../../models/settings');
 const SessionLog = require('../../models/sessionlog');
 const { activeStartupSessions } = require('../slash/startup');
+const { setEmbedMedia } = require('../../utils/embedMedia');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -85,8 +86,7 @@ module.exports = {
       .setDescription(cohostEndTemplate.description?.replace(/\$user/g, `<@${userId}>`).replace(/\$notes/g, note) || 'Data was not found, please use `/settings` to configure the Embed')
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
-    if (cohostEndTemplate.image?.startsWith('http')) endEmbed.setImage(cohostEndTemplate.image);
-    if (cohostEndTemplate.thumbnail?.startsWith('http')) endEmbed.setThumbnail(cohostEndTemplate.thumbnail);
+    setEmbedMedia(endEmbed, cohostEndTemplate);
 
     const originalCohostMessage = sessionData.messageId
       ? await interaction.channel.messages.fetch(sessionData.messageId).catch(() => null)

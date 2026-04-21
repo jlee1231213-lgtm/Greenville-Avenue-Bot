@@ -4,6 +4,7 @@ const path = require('path');
 const StartupSession = require(path.join(__dirname, '../../models/startupsession'));
 const Settings = require('../../models/settings');
 const { DEFAULT_SETUP_EMBED, DEFAULT_STARTUP_EMBED, isLegacySetupEmbed, isLegacyStartupEmbed } = require('../../utils/defaultEmbeds');
+const { setEmbedMedia } = require('../../utils/embedMedia');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 const activeStartupSessions = new Map();
@@ -72,7 +73,7 @@ module.exports = {
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    if (startupTemplate.image && startupTemplate.image.startsWith('http')) embed.setImage(startupTemplate.image);
+    setEmbedMedia(embed, { image: startupTemplate.image });
 
     const message = await interaction.channel.send({ content: '@everyone', embeds: [embed] });
     let reacted = false;
@@ -124,7 +125,7 @@ module.exports = {
           .setDescription((setupTemplate.description || DEFAULT_SETUP_EMBED.description).replace(/\$user/g, `<@${userId}>`))
           .setColor(embedColor);
 
-        if ((setupTemplate.image || DEFAULT_SETUP_EMBED.image)?.startsWith('http')) setupEmbed.setImage(setupTemplate.image || DEFAULT_SETUP_EMBED.image);
+        setEmbedMedia(setupEmbed, { image: setupTemplate.image || DEFAULT_SETUP_EMBED.image });
 
         await message.reply({ embeds: [setupEmbed] });
       }

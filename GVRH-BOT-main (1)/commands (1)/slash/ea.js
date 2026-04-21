@@ -3,6 +3,7 @@ const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
 const { getConfiguredRoleIds, memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 const { DEFAULT_EA_EMBED } = require('../../utils/defaultEmbeds');
+const { setEmbedMedia } = require('../../utils/embedMedia');
 const STARTUP_REACTION_ID = '1493951094605353062';
 const STARTUP_REACTION_FALLBACK = '✅';
 
@@ -63,8 +64,10 @@ module.exports = {
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    if ((eaTemplate.image || DEFAULT_EA_EMBED.image)?.startsWith('http')) embed.setImage(eaTemplate.image || DEFAULT_EA_EMBED.image);
-    if (eaTemplate.thumbnail?.startsWith('http')) embed.setThumbnail(eaTemplate.thumbnail);
+    setEmbedMedia(embed, {
+      image: eaTemplate.image || DEFAULT_EA_EMBED.image,
+      thumbnail: eaTemplate.thumbnail,
+    });
 
     const button = new ButtonBuilder().setCustomId('get_ealink').setLabel('Get Link').setStyle(ButtonStyle.Success);
     const row = new ActionRowBuilder().addComponents(button);

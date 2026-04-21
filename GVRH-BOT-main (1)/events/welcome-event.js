@@ -1,6 +1,7 @@
 
 const { EmbedBuilder } = require('discord.js');
 const Settings = require('../models/settings');
+const { setEmbedMedia } = require('../utils/embedMedia');
 
 module.exports = {
   name: 'guildMemberAdd',
@@ -32,7 +33,7 @@ module.exports = {
       .setTitle(title)
       .setDescription(description);
 
-    if (embedData.image) embed.setImage(embedData.image);
+    setEmbedMedia(embed, { image: embedData.image, thumbnail: embedData.thumbnail });
 
     channel.send({ embeds: [embed] }).catch(() => {});
   }

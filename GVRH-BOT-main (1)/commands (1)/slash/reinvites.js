@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, ComponentType } = require("discord.js");
 const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
+const { setEmbedMedia } = require('../../utils/embedMedia');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 const STARTUP_REACTION_ID = '1493951094605353062';
 const STARTUP_REACTION_FALLBACK = '✅';
@@ -105,8 +106,7 @@ module.exports = {
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    if (reinvitesTemplate.image?.startsWith('http')) embed.setImage(reinvitesTemplate.image);
-    if (reinvitesTemplate.thumbnail?.startsWith('http')) embed.setThumbnail(reinvitesTemplate.thumbnail);
+    setEmbedMedia(embed, reinvitesTemplate);
 
     const button = new ButtonBuilder()
       .setCustomId('reinvites_link')
