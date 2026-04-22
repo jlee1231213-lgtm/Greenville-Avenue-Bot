@@ -105,3 +105,11 @@ startBot().catch((err) => {
     console.error('[ERROR] Bot startup failed:', err);
     process.exit(1);
 });
+
+process.on('unhandledRejection', (reason) => {
+    console.error('[ERROR] Unhandled promise rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('[ERROR] Uncaught exception:', err);
+});

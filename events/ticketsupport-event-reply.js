@@ -145,7 +145,10 @@ module.exports = {
           .setRequired(true)
       ));
 
-      await interaction.showModal(modal);
+      await interaction.showModal(modal).catch(err => {
+        if (err.code === 10062) return; // interaction expired/unknown — safe to ignore
+        throw err;
+      });
       return;
     }
 
