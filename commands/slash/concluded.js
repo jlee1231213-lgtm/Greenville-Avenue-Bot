@@ -29,7 +29,6 @@ function resolveConcludedImageUrl(settings) {
     const candidates = [
         process.env.CONCLUDED_IMAGE_URL,
         settings?.overEmbed?.image,
-        settings?.releaseEmbed?.image,
     ];
 
     for (const candidate of candidates) {
