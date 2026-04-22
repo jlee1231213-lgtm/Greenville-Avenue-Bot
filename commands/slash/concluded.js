@@ -25,6 +25,23 @@ function normalizeDiscordMediaUrl(url) {
     }
 }
 
+function resolveConcludedImageUrl(settings) {
+    const candidates = [
+        process.env.CONCLUDED_IMAGE_URL,
+        settings?.overEmbed?.image,
+        settings?.releaseEmbed?.image,
+    ];
+
+    for (const candidate of candidates) {
+        const normalized = normalizeDiscordMediaUrl(candidate);
+        if (normalized) {
+            return normalized;
+        }
+    }
+
+    return null;
+}
+
 function formatDiscordTimestamp(date) {
     return `<t:${Math.floor(date.getTime() / 1000)}:f>`;
 }
@@ -138,7 +155,7 @@ module.exports = {
     async execute(interaction) {
         const settings = await Settings.findOne({ guildId: interaction.guild.id });
         const embedColor = settings?.embedcolor || '#ab6cc4';
-        const imageUrl = normalizeDiscordMediaUrl('https://media.discordapp.net/attachments/1450473391134871565/1492956124092039329/Screenshot_20260402_214940.jpg?ex=69dd373d&is=69dbe5bd&hm=9b392661e3f7da0bd7a522875f0d5adccf36e613e5d6f834fc04c81ffdb977b3&=&format=webp&width=2160&height=1046');
+        const imageUrl = resolveConcludedImageUrl(settings);
         const host = interaction.user;
         const latestStartupSession = await StartupSession.findOne({
             guildId: interaction.guild.id,
