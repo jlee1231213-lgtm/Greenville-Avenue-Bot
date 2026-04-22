@@ -1,6 +1,7 @@
 const VISIBLE_SLASH_COMMANDS = new Set([
     'startup',
     'setup',
+    'hatepings',
     'cohost',
     'release',
     'register',
