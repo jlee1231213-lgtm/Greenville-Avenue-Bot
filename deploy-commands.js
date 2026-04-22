@@ -2,32 +2,16 @@ const fs = require('fs');
 const path = require('path');
 const { REST, Routes } = require('discord.js');
 const { isVisibleSlashCommand } = require('./visibleSlashCommands');
+const { loadSlashCommands } = require('./utils/slashCommandLoader');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const commands = [];
-function findSlashCommandsPath() {
-    const candidates = [
-        path.join(__dirname, 'commands', 'slash'),
-        path.join(__dirname, 'commands (1)', 'slash'),
-    ];
+const { loadedCommands } = loadSlashCommands(__dirname);
 
-    for (const candidate of candidates) {
-        if (fs.existsSync(candidate)) {
-            return candidate;
-        }
-    }
-
-    throw new Error(`No slash commands folder found. Checked: ${candidates.join(', ')}`);
-}
-
-const commandsPath = findSlashCommandsPath();
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-for (const file of commandFiles) {
-    const command = require(path.join(commandsPath, file));
+for (const { command, name } of loadedCommands) {
 
     // Only register slash commands that should appear in Discord's slash menu.
-    if (command.data && command.data.toJSON && isVisibleSlashCommand(command.data.name)) {
+    if (command.data && command.data.toJSON && isVisibleSlashCommand(name)) {
         commands.push(command.data.toJSON());
     }
 }

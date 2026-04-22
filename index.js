@@ -3,6 +3,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mongoose = require('mongoose');
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
+const { loadSlashCommands } = require('./utils/slashCommandLoader');
 
 mongoose.set('bufferCommands', false);
 
@@ -48,36 +49,19 @@ const client = new Client({
     ]
 });
 
-function findSlashCommandsPath() {
-    const candidates = [
-        path.join(__dirname, 'commands', 'slash'),
-        path.join(__dirname, 'commands (1)', 'slash'),
-    ];
-
-    for (const candidate of candidates) {
-        if (fs.existsSync(candidate)) {
-            return candidate;
-        }
-    }
-
-    throw new Error(`No slash commands folder found. Checked: ${candidates.join(', ')}`);
-}
-
-const slashCommandsPath = findSlashCommandsPath();
+const { slashCommandsPath, loadedCommands } = loadSlashCommands(__dirname);
 console.log('[INFO] Loading slash commands from', slashCommandsPath);
 
 // Commands
 client.commands = new Collection();
-const slashCommandFiles = fs.readdirSync(slashCommandsPath).filter(f => f.endsWith('.js'));
-for (const file of slashCommandFiles) {
+for (const { file, command, name } of loadedCommands) {
     try {
-        const command = require(path.join(slashCommandsPath, file));
-        if (!command?.data?.name) {
+        if (!name) {
             console.log('[DEBUG] Skipping slash command (missing data.name):', file);
             continue;
         }
         console.log('[DEBUG] Loading slash command:', file);
-        client.commands.set(command.data.name, command);
+        client.commands.set(name, command);
     } catch (err) {
         console.error('[ERROR] Failed to load slash command:', file);
         console.error(err);
