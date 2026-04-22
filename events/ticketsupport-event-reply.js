@@ -288,6 +288,8 @@ module.exports = {
       }
 
       if (interaction.customId === 'closeTicket') {
+        const mentionUserIds = [...new Set([ticketData.ownerId, interaction.user.id].filter(Boolean))];
+
         const row = new ActionRowBuilder().addComponents(
           new ButtonBuilder().setCustomId('confirmClose').setLabel('Confirm Close').setStyle(ButtonStyle.Danger),
           new ButtonBuilder().setCustomId('cancelCloseRequest').setLabel('Cancel Request').setStyle(ButtonStyle.Secondary)
@@ -302,7 +304,7 @@ module.exports = {
               .setDescription('Please confirm if this ticket should be closed.')
           ],
           components: [row],
-          allowedMentions: { users: [ticketData.ownerId, interaction.user.id] }
+          allowedMentions: { users: mentionUserIds }
         });
         return;
       }
