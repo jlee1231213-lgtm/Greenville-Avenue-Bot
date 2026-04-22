@@ -21,40 +21,32 @@ const TRANSCRIPT_CHANNEL_ID = '1495629716395266129';
 const TICKET_TYPE_META = {
   st: {
     label: 'General Assistance',
-    formatTitle: 'General Assistance Format',
-    formatLines: [
-      'Topic: [what this is about]',
-      'What you need help with: [details]',
-      'Extra context: [screenshots/links if any]'
-    ]
   },
   mr: {
     label: 'Member Report',
-    formatTitle: 'Member Report Format',
-    formatLines: [
-      'Reported Username/ID: [user]',
-      'What happened: [details]',
-      'Proof: [links/images]'
-    ]
   },
   ma: {
     label: 'Staff Report',
-    formatTitle: 'Staff Report Format',
-    formatLines: [
-      'Reported Staff Username/ID: [staff member]',
-      'What happened: [details]',
-      'Proof: [links/images]'
-    ]
   }
 };
 
-function buildFormatBlock(typeMeta) {
-  return [
-    `**${typeMeta.formatTitle}**`,
-    '```',
-    ...typeMeta.formatLines,
-    '```'
-  ].join('\n');
+function toChannelSlug(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+}
+
+function buildTicketChannelName(user, typeMeta) {
+  const userSlug = toChannelSlug(user?.username || user?.tag || user?.id || 'user') || 'user';
+  const typeSlug = toChannelSlug(typeMeta?.label || 'ticket') || 'ticket';
+  const suffix = 'ticket';
+
+  // Keep names deterministic and short enough for Discord channel name limits.
+  const maxCoreLength = 90;
+  const core = `${userSlug}-${typeSlug}`.slice(0, maxCoreLength).replace(/-+$/g, '');
+  return `${core}-${suffix}`;
 }
 
 function getTicketSupportRoleIds(guild, settings, type) {
@@ -101,7 +93,7 @@ module.exports = {
 
     const isSupportSelect = interaction.isStringSelectMenu() && interaction.customId === 'supportOptions';
     const isSupportModal = interaction.isModalSubmit() && interaction.customId.startsWith('ticketModal_');
-    const isSupportButton = interaction.isButton() && ['claimTicket', 'unclaimTicket', 'closeTicket', 'confirmClose'].includes(interaction.customId);
+    const isSupportButton = interaction.isButton() && ['claimTicket', 'unclaimTicket', 'closeTicket', 'confirmClose', 'cancelCloseRequest'].includes(interaction.customId);
     if (!isSupportSelect && !isSupportModal && !isSupportButton) return;
 
     const settings = interaction.guild ? await Settings.findOne({ guildId: interaction.guild.id }).catch(() => null) : null;
@@ -164,7 +156,10 @@ module.exports = {
         const type = interaction.customId.split('_')[1];
         const ownerId = interaction.user.id;
         const guild = interaction.guild;
-        const ticketName = `${type}_${ownerId}_ticket`;
+        const typeMeta = TICKET_TYPE_META[type] || {
+          label: 'Support Ticket',
+        };
+        const ticketName = buildTicketChannelName(interaction.user, typeMeta);
         const everyone = guild.roles.everyone;
         const supportRoleIds = getTicketSupportRoleIds(guild, settings, type);
 
@@ -187,12 +182,6 @@ module.exports = {
           permissionOverwrites
         });
 
-      const typeMeta = TICKET_TYPE_META[type] || {
-        label: 'Support Ticket',
-        formatTitle: 'Support Format',
-        formatLines: ['Describe your request here.']
-      };
-      const formatBlock = buildFormatBlock(typeMeta);
       let description = '';
       if (type === 'st') description = [
         '**Thank you for opening a ticket within *Greenville Avenue*. Please wait for the staff team to reply.**',
@@ -201,10 +190,7 @@ module.exports = {
         '',
         `<@${ownerId}>`,
         '',
-        `**Your Message:** ${interaction.fields.getTextInputValue('helpNeeded')}`,
-        '',
-        '**Use this format for any follow-up details:**',
-        formatBlock
+        `**Your Message:** ${interaction.fields.getTextInputValue('helpNeeded')}`
       ].join('\n');
       if (type === 'mr') description = [
         '**Thank you for opening a Member Report within *Greenville Avenue*.**',
@@ -214,10 +200,7 @@ module.exports = {
         '**Submitted Details**',
         `- Reported Username/ID: ${interaction.fields.getTextInputValue('userReport')}`,
         `- What happened: ${interaction.fields.getTextInputValue('reason')}`,
-        `- Proof: ${interaction.fields.getTextInputValue('proof') || 'No proof provided'}`,
-        '',
-        '**Use this format for any follow-up details:**',
-        formatBlock
+        `- Proof: ${interaction.fields.getTextInputValue('proof') || 'No proof provided'}`
       ].join('\n');
       if (type === 'ma') description = [
         '**Thank you for opening a Staff Report within *Greenville Avenue*.**',
@@ -226,10 +209,7 @@ module.exports = {
         '',
         '**Submitted Details**',
         `- Your Username/ID: ${interaction.user.tag}`,
-        `- What happened: ${interaction.fields.getTextInputValue('reason')}`,
-        '',
-        '**Use this format for any follow-up details:**',
-        formatBlock
+        `- What happened: ${interaction.fields.getTextInputValue('reason')}`
       ].join('\n');
 
       const embed = new EmbedBuilder().setColor(embedColor).setDescription(description);
@@ -327,12 +307,51 @@ module.exports = {
       }
 
       if (interaction.customId === 'closeTicket') {
-        const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('confirmClose').setLabel('Confirm Close').setStyle(ButtonStyle.Danger));
-        await interaction.reply({ embeds: [new EmbedBuilder().setColor(embedColor).setDescription('Are you sure you want to close this ticket?')], components: [row], ephemeral: true });
+        const mentionUserIds = [...new Set([ticketData.ownerId, interaction.user.id].filter(Boolean))];
+
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId('confirmClose').setLabel('Confirm Close').setStyle(ButtonStyle.Danger),
+          new ButtonBuilder().setCustomId('cancelCloseRequest').setLabel('Cancel Request').setStyle(ButtonStyle.Secondary)
+        );
+
+        await interaction.reply({
+          content: `<@${ticketData.ownerId}> ticket close requested by <@${interaction.user.id}>.`,
+          embeds: [
+            new EmbedBuilder()
+              .setColor(embedColor)
+              .setTitle('Ticket Close Request')
+              .setDescription('Please confirm if this ticket should be closed.')
+          ],
+          components: [row],
+          allowedMentions: { users: mentionUserIds }
+        });
+        return;
+      }
+
+      if (interaction.customId === 'cancelCloseRequest') {
+        const canCancel = interaction.user.id === ticketData.ownerId
+          || interaction.user.id === ticketData.claimed
+          || interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels);
+
+        if (!canCancel) {
+          await interaction.reply({ content: 'Only the ticket owner or staff can cancel this close request.', ephemeral: true });
+          return;
+        }
+
+        await interaction.update({ content: 'Ticket close request canceled.', embeds: [], components: [] });
         return;
       }
 
       if (interaction.customId === 'confirmClose') {
+        const canConfirm = interaction.user.id === ticketData.ownerId
+          || interaction.user.id === ticketData.claimed
+          || interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels);
+
+        if (!canConfirm) {
+          await interaction.reply({ content: 'Only the ticket owner or staff can confirm closure.', ephemeral: true });
+          return;
+        }
+
         const transcript = await discordTranscripts.createTranscript(interaction.channel);
         const closedAt = new Date();
 
@@ -358,7 +377,12 @@ module.exports = {
 
         await Ticket.deleteOne({ channelId: interaction.channel.id });
         await interaction.update({ content: 'Closing ticket in 5 seconds...', embeds: [], components: [] });
-        setTimeout(() => interaction.channel.delete(), 5000);
+        setTimeout(async () => {
+          const channelToDelete = await interaction.guild.channels.fetch(ticketData.channelId).catch(() => null);
+          if (channelToDelete?.deletable) {
+            await channelToDelete.delete('Ticket closed after confirmation').catch(() => {});
+          }
+        }, 5000);
       }
     }
   }
