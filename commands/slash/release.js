@@ -7,6 +7,27 @@ const STARTUP_REACTION_ID = '1493951094605353062';
 const STARTUP_REACTION_FALLBACK = '✅';
 const RELEASE_EMBED_IMAGE = 'https://cdn.discordapp.com/attachments/1489657569030049844/1495495694700777542/Screenshot_20260419_214551.jpg';
 
+function normalizeEmbedMediaUrl(url) {
+  if (typeof url !== 'string') return null;
+
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = new URL(trimmed);
+    if (!/^https?:$/i.test(parsed.protocol)) return null;
+
+    if (parsed.hostname === 'media.discordapp.net' && parsed.pathname.includes('/attachments/')) {
+      parsed.hostname = 'cdn.discordapp.com';
+      parsed.search = '';
+    }
+
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("release")
@@ -46,7 +67,7 @@ module.exports = {
     const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
     const settings = await Settings.findOne({ guildId: interaction.guild.id });
     const embedColor = settings?.embedcolor || '#155fa0';
-    if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId)) {
+    if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId, settings?.adminRoleId)) {
       return interaction.reply({
         embeds: [
           new EmbedBuilder()
@@ -84,15 +105,17 @@ module.exports = {
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    embed.setImage(RELEASE_EMBED_IMAGE);
-    if (releaseTemplate.thumbnail?.startsWith('http')) embed.setThumbnail(releaseTemplate.thumbnail);
+    const imageUrl = normalizeEmbedMediaUrl(releaseTemplate.image || RELEASE_EMBED_IMAGE);
+    const thumbnailUrl = normalizeEmbedMediaUrl(releaseTemplate.thumbnail);
+
+    if (imageUrl) embed.setImage(imageUrl);
+    if (thumbnailUrl) embed.setThumbnail(thumbnailUrl);
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId("getlink")
         .setLabel('Link')
-          .setEmoji({ id: '1489643253681754112', name: 'BlueLine_chain' })
-          .setStyle(ButtonStyle.Success)
+        .setStyle(ButtonStyle.Success)
     );
 
     const message = await interaction.channel.send({
