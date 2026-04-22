@@ -291,9 +291,14 @@ module.exports = {
             }
 
             if (interaction.customId === 'welcome_channel_modal') {
-                const channel = interaction.fields.getTextInputValue('welcome_channel_input');
-                await updateSetting(guildId, 'welcomechannelid', channel);
-                return interaction.reply({ content: `Welcome channel set to <#${channel}>`, flags: 64 });
+                const rawValue = interaction.fields.getTextInputValue('welcome_channel_input').trim();
+                const channelId = (rawValue.match(/\d{17,20}/) || [])[0];
+                if (!channelId) {
+                    return interaction.reply({ content: 'Please provide a valid channel ID or channel mention.', flags: 64 });
+                }
+
+                await updateSetting(guildId, 'welcomechannelid', channelId);
+                return interaction.reply({ content: `Welcome channel set to <#${channelId}>`, flags: 64 });
             }
             if (interaction.customId === 'logging_channel_modal') {
                 const channel = interaction.fields.getTextInputValue('logging_channel_input');

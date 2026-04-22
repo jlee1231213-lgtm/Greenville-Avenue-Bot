@@ -10,6 +10,12 @@ const DEFAULT_WELCOME_DESCRIPTION = `> <:GVA:1489357718748659803> **__Welcome to
 
 const DEFAULT_WELCOME_IMAGE = 'https://cdn.discordapp.com/attachments/1474852098842820853/1489331686117212271/Screenshot_20260402_213214.jpg?ex=69d007b8&is=69ceb638&hm=f70c020ea32590f2b8957481a4103b31bcf02817376307a6b2b4ee2cd2014c1f&';
 
+function extractChannelId(value) {
+  if (typeof value !== 'string') return null;
+  const match = value.trim().match(/\d{17,20}/);
+  return match ? match[0] : null;
+}
+
 module.exports = {
   name: 'guildMemberAdd',
   once: false,
@@ -19,8 +25,20 @@ module.exports = {
     const settings = await Settings.findOne({ guildId: member.guild.id });
     if (!settings || !settings.welcomechannelid) return;
 
-    const channel = member.guild.channels.cache.get(settings.welcomechannelid);
-    if (!channel) return;
+    const channelId = extractChannelId(settings.welcomechannelid);
+    if (!channelId) {
+      console.warn(`[WARN] Invalid welcomechannelid for guild ${member.guild.id}: ${settings.welcomechannelid}`);
+      return;
+    }
+
+    let channel = member.guild.channels.cache.get(channelId);
+    if (!channel) {
+      channel = await member.guild.channels.fetch(channelId).catch(() => null);
+    }
+    if (!channel || !channel.isTextBased()) {
+      console.warn(`[WARN] Welcome channel not found or not text-based for guild ${member.guild.id}: ${channelId}`);
+      return;
+    }
 
     const embedData = settings.welcomeEmbed || {};
     const color = settings.embedcolor || '#ffffff';
@@ -49,6 +67,8 @@ module.exports = {
       embed.setImage(imageUrl);
     }
 
-    channel.send({ content: userMention, embeds: [embed] }).catch(() => {});
+    channel.send({ content: userMention, embeds: [embed] }).catch(error => {
+      console.error(`[ERROR] Failed to send welcome message in guild ${member.guild.id}:`, error?.message || error);
+    });
   }
 };
