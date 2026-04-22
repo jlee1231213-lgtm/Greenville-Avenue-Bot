@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
+const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -7,8 +8,13 @@ module.exports = {
     .setDescription('Post instructions for muting ping-heavy channels and partnerships.'),
 
   async execute(interaction) {
+    const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
     const settings = await Settings.findOne({ guildId: interaction.guild.id });
     const embedColor = settings?.embedcolor || '#ab6cc4';
+
+    if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId, settings?.adminRoleId)) {
+      return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
+    }
 
     const embed = new EmbedBuilder()
       .setTitle('Tired of the Pings?')
