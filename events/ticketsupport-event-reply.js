@@ -356,7 +356,12 @@ module.exports = {
 
         await Ticket.deleteOne({ channelId: interaction.channel.id });
         await interaction.update({ content: 'Closing ticket in 5 seconds...', embeds: [], components: [] });
-        setTimeout(() => interaction.channel.delete(), 5000);
+        setTimeout(async () => {
+          const channelToDelete = await interaction.guild.channels.fetch(ticketData.channelId).catch(() => null);
+          if (channelToDelete?.deletable) {
+            await channelToDelete.delete('Ticket closed after confirmation').catch(() => {});
+          }
+        }, 5000);
       }
     }
   }
