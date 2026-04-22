@@ -30,6 +30,25 @@ const TICKET_TYPE_META = {
   }
 };
 
+function toChannelSlug(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+}
+
+function buildTicketChannelName(user, typeMeta) {
+  const userSlug = toChannelSlug(user?.username || user?.tag || user?.id || 'user') || 'user';
+  const typeSlug = toChannelSlug(typeMeta?.label || 'ticket') || 'ticket';
+  const suffix = 'ticket';
+
+  // Keep names deterministic and short enough for Discord channel name limits.
+  const maxCoreLength = 90;
+  const core = `${userSlug}-${typeSlug}`.slice(0, maxCoreLength).replace(/-+$/g, '');
+  return `${core}-${suffix}`;
+}
+
 function getTicketSupportRoleIds(guild, settings, type) {
   const configuredRoleIds = [
     ...new Set(getConfiguredRoleIds(settings?.staffRoleId, settings?.adminRoleId))
@@ -137,7 +156,10 @@ module.exports = {
         const type = interaction.customId.split('_')[1];
         const ownerId = interaction.user.id;
         const guild = interaction.guild;
-        const ticketName = `${type}_${ownerId}_ticket`;
+        const typeMeta = TICKET_TYPE_META[type] || {
+          label: 'Support Ticket',
+        };
+        const ticketName = buildTicketChannelName(interaction.user, typeMeta);
         const everyone = guild.roles.everyone;
         const supportRoleIds = getTicketSupportRoleIds(guild, settings, type);
 
@@ -160,9 +182,6 @@ module.exports = {
           permissionOverwrites
         });
 
-      const typeMeta = TICKET_TYPE_META[type] || {
-        label: 'Support Ticket',
-      };
       let description = '';
       if (type === 'st') description = [
         '**Thank you for opening a ticket within *Greenville Avenue*. Please wait for the staff team to reply.**',
