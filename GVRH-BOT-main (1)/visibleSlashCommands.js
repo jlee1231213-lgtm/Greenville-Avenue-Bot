@@ -11,6 +11,7 @@ const VISIBLE_SLASH_COMMANDS = new Set([
     'ticket',
     'ticketsupport',
     'ban',
+    'role',
     'settings',
     'sendembed',
     'embed',
