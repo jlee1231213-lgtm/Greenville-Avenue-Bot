@@ -23,9 +23,15 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
         console.log('🔄 Refreshing application (/) commands...');
 
         const deployGuildId = process.env.GUILD_ID?.trim();
-        let fellBackFromGuildDeploy = false;
         if (deployGuildId) {
             try {
+                // Keep the slash menu clean when guild deploy is available.
+                await rest.put(
+                    Routes.applicationCommands(process.env.CLIENT_ID),
+                    { body: [] }
+                );
+                console.log('🧹 Cleared global application commands.');
+
                 await rest.put(
                     Routes.applicationGuildCommands(
                         process.env.CLIENT_ID,
@@ -37,25 +43,21 @@ const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
                 console.log(`✅ Successfully registered ${commands.length} guild commands to ${deployGuildId}.`);
                 return;
             } catch (error) {
-                if (error?.code === 50001) {
-                    fellBackFromGuildDeploy = true;
-                    console.warn(`⚠️ Missing access to guild ${deployGuildId}. Falling back to global command registration.`);
-                } else {
+                if (error?.code !== 50001) {
                     throw error;
                 }
+
+                console.warn(`⚠️ Missing access to guild ${deployGuildId}. Falling back to global command deployment.`);
             }
+        } else {
+            console.warn('⚠️ GUILD_ID is not set. Deploying global commands.');
         }
 
         await rest.put(
             Routes.applicationCommands(process.env.CLIENT_ID),
             { body: commands }
         );
-
-        if (fellBackFromGuildDeploy) {
-            console.log(`✅ Successfully registered ${commands.length} global commands after guild deploy failed for ${deployGuildId}.`);
-        } else {
-            console.log(`✅ Successfully registered ${commands.length} global commands because GUILD_ID is not set.`);
-        }
+        console.log(`✅ Successfully registered ${commands.length} global commands.`);
     } catch (error) {
         console.error(error);
     }
