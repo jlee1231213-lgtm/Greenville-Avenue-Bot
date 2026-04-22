@@ -1,9 +1,29 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
 const StartupSession = require('../../models/startupsession');
+const SessionLog = require('../../models/sessionlog');
 const { activeStartupSessions } = require('./startup');
-const { sendCommandLog } = require('../../utils/commandLogger');
+const { sendCommandLog, sendQuotaStatusLog } = require('../../utils/commandLogger');
+const { getConfiguredRoleIds } = require('../../utils/roleHelpers');
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+
+function normalizeDiscordMediaUrl(url) {
+    if (typeof url !== 'string') return null;
+
+    try {
+        const parsedUrl = new URL(url.trim());
+        if (!/^https?:$/i.test(parsedUrl.protocol)) return null;
+
+        if (parsedUrl.hostname === 'media.discordapp.net') {
+            parsedUrl.hostname = 'cdn.discordapp.com';
+            parsedUrl.search = '';
+        }
+
+        return parsedUrl.toString();
+    } catch {
+        return null;
+    }
+}
 
 function formatDiscordTimestamp(date) {
     return `<t:${Math.floor(date.getTime() / 1000)}:f>`;
@@ -46,6 +66,65 @@ async function purgeNonPinnedMessages(channel) {
     }
 }
 
+async function logAdvancedQuotaStatus(interaction, settings) {
+    const quotaTarget = Number.parseInt(process.env.QUOTA_REQUIRED_SESSIONS || '2', 10);
+    const quotaPeriodDays = Number.parseInt(process.env.QUOTA_PERIOD_DAYS || '7', 10);
+
+    if (!Number.isFinite(quotaTarget) || quotaTarget < 1 || !Number.isFinite(quotaPeriodDays) || quotaPeriodDays < 1) {
+        return;
+    }
+
+    const periodStart = new Date(Date.now() - quotaPeriodDays * 24 * 60 * 60 * 1000);
+    const roleIds = getConfiguredRoleIds(settings?.staffRoleId, settings?.adminRoleId);
+    const uniqueRoleIds = [...new Set(roleIds)];
+
+    let staffMembers = [];
+    if (uniqueRoleIds.length > 0) {
+        await interaction.guild.members.fetch();
+        staffMembers = interaction.guild.members.cache.filter(member =>
+            uniqueRoleIds.some(roleId => member.roles.cache.has(roleId))
+        ).map(member => member.id);
+    } else {
+        staffMembers = [interaction.user.id];
+    }
+
+    const quotaCounts = await SessionLog.aggregate([
+        {
+            $match: {
+                guildId: interaction.guild.id,
+                sessiontype: 'session',
+                timeended: { $gte: periodStart },
+            },
+        },
+        {
+            $group: {
+                _id: '$userId',
+                count: { $sum: 1 },
+            },
+        },
+    ]);
+
+    const countByUserId = new Map(quotaCounts.map(entry => [String(entry._id), entry.count]));
+    const participants = [...new Set(staffMembers)].map(userId => {
+        const count = countByUserId.get(userId) || 0;
+        return {
+            userId,
+            count,
+            passed: count >= quotaTarget,
+        };
+    });
+
+    await sendQuotaStatusLog({
+        interaction,
+        settings,
+        title: 'Staff Quota Status',
+        quotaName: 'Session Hosting Quota',
+        periodLabel: `the last ${quotaPeriodDays} day(s)`,
+        target: quotaTarget,
+        participants,
+    });
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('concluded')
@@ -59,7 +138,7 @@ module.exports = {
     async execute(interaction) {
         const settings = await Settings.findOne({ guildId: interaction.guild.id });
         const embedColor = settings?.embedcolor || '#ab6cc4';
-        const imageUrl = 'https://media.discordapp.net/attachments/1450473391134871565/1492956124092039329/Screenshot_20260402_214940.jpg?ex=69dd373d&is=69dbe5bd&hm=9b392661e3f7da0bd7a522875f0d5adccf36e613e5d6f834fc04c81ffdb977b3&=&format=webp&width=2160&height=1046';
+        const imageUrl = normalizeDiscordMediaUrl('https://media.discordapp.net/attachments/1450473391134871565/1492956124092039329/Screenshot_20260402_214940.jpg?ex=69dd373d&is=69dbe5bd&hm=9b392661e3f7da0bd7a522875f0d5adccf36e613e5d6f834fc04c81ffdb977b3&=&format=webp&width=2160&height=1046');
         const host = interaction.user;
         const latestStartupSession = await StartupSession.findOne({
             guildId: interaction.guild.id,
@@ -96,8 +175,11 @@ module.exports = {
                 `-# <:gvry_ydot:1489356230785761382> **Duration:** \`${duration}\``,
                 `-# <:gvry_ydot:1489356230785761382> **Notes:** ${notes}`
             ].join('\n'))
-            .setImage(imageUrl)
             .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
+
+        if (imageUrl) {
+            embed.setImage(imageUrl);
+        }
 
         await interaction.reply({ embeds: [embed] });
 
@@ -111,5 +193,7 @@ module.exports = {
                 { name: 'Notes', value: notes.length > 250 ? `${notes.slice(0, 247)}...` : notes },
             ],
         });
+
+        await logAdvancedQuotaStatus(interaction, settings);
     },
 };
