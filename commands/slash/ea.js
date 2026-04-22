@@ -95,7 +95,7 @@ module.exports = {
 
     let earlyAccessMessage;
     try {
-      earlyAccessMessage = await interaction.channel.send({ content: '@here', embeds: [embed], components: [row] });
+      earlyAccessMessage = await interaction.channel.send({ content: '<@&1495748936617689110>, <@&1443224410428543000>, <@&1443224410310836360>, <@&1443224410285932609>', embeds: [embed], components: [row] });
     } catch (error) {
       if (error?.code === 50001 || error?.code === 50013) {
         return interaction.editReply({ content: 'I could not send the Early Access message in this channel. Please check my channel access and permissions.' });
