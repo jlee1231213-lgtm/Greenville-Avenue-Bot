@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
 const StartupSession = require('../../models/startupsession');
 const { activeStartupSessions } = require('./startup');
+const { sendCommandLog } = require('../../utils/commandLogger');
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 
 function formatDiscordTimestamp(date) {
@@ -99,5 +100,16 @@ module.exports = {
             .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
         await interaction.reply({ embeds: [embed] });
+
+        await sendCommandLog({
+            interaction,
+            settings,
+            title: 'Concluded Command Executed',
+            description: `${interaction.user.tag} concluded a session.`,
+            fields: [
+                { name: 'Duration', value: duration, inline: true },
+                { name: 'Notes', value: notes.length > 250 ? `${notes.slice(0, 247)}...` : notes },
+            ],
+        });
     },
 };

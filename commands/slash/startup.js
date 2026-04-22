@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const StartupSession = require(path.join(__dirname, '../../models/startupsession'));
 const Settings = require('../../models/settings');
+const { sendCommandLog } = require('../../utils/commandLogger');
 const { DEFAULT_SETUP_EMBED, DEFAULT_STARTUP_EMBED, isLegacySetupEmbed, isLegacyStartupEmbed } = require('../../utils/defaultEmbeds');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
@@ -145,6 +146,17 @@ module.exports = {
       );
 
       await interaction.editReply({ content: 'Session started successfully.' });
+
+      await sendCommandLog({
+        interaction,
+        settings,
+        title: 'Startup Command Executed',
+        description: `${interaction.user.tag} started a startup session.`,
+        fields: [
+          { name: 'Reactions Required', value: String(reactionsRequired), inline: true },
+          { name: 'Startup Message', value: `[Jump to Message](${message.url})`, inline: true },
+        ],
+      });
 
       const filter = (reaction, user) => isStartupReaction(reaction) && !user.bot;
       const collector = message.createReactionCollector({ filter, max: reactionsRequired, time: 1000 * 60 * 60 });

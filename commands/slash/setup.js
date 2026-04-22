@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
 const StartupSession = require('../../models/startupsession');
+const { sendCommandLog } = require('../../utils/commandLogger');
 const { DEFAULT_SETUP_EMBED, isLegacySetupEmbed } = require('../../utils/defaultEmbeds');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
@@ -58,7 +59,19 @@ module.exports = {
         return interaction.editReply({ content: 'Startup message could not be found. Please run `/startup` again.' });
       }
 
-      await startupMessage.reply({ embeds: [embed] });
+      const setupMessage = await startupMessage.reply({ embeds: [embed] });
+
+      await sendCommandLog({
+        interaction,
+        settings,
+        title: 'Setup Command Executed',
+        description: `${interaction.user.tag} posted setup for a startup session.`,
+        fields: [
+          { name: 'Setup Message', value: `[Jump to Message](${setupMessage.url})`, inline: true },
+          { name: 'Startup Message', value: `[Jump to Message](https://discord.com/channels/${interaction.guild.id}/${interaction.channel.id}/${startupMessage.id})`, inline: true },
+        ],
+      });
+
       await interaction.editReply({ content: 'Setup notice sent as a reply to the latest startup message.' });
     } catch (error) {
       if (!interaction.replied && !interaction.deferred) {

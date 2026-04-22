@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ComponentType, ButtonStyle, MessageFlags, PermissionsBitField } = require('discord.js');
 const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
+const { sendCommandLog } = require('../../utils/commandLogger');
 const { getConfiguredRoleIds, memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 const { DEFAULT_EA_EMBED } = require('../../utils/defaultEmbeds');
 const STARTUP_REACTION_ID = '1493951094605353062';
@@ -104,25 +105,16 @@ module.exports = {
     }
     await interaction.editReply({ content: 'Early access message sent successfully.' });
 
-    let logChannel;
-    try { logChannel = await interaction.client.channels.fetch(settings.logChannelId); } catch { logChannel = null; }
-
-    if (logChannel) {
-      logChannel.send({
-        embeds: [
-          new EmbedBuilder()
-            .setTitle('Early Access Command Executed')
-            .setDescription(`Early access was initiated by ${interaction.user.tag}`)
-            .addFields(
-              { name: 'Channel', value: `${interaction.channel.name} (${interaction.channel.id})`, inline: true },
-              { name: 'Message Link', value: `[Jump to Message](${earlyAccessMessage.url})`, inline: true },
-              { name: 'Link Provided', value: sessionLink }
-            )
-            .setColor(embedColor)
-            .setTimestamp()
-        ]
-      });
-    }
+    await sendCommandLog({
+      interaction,
+      settings,
+      title: 'Early Access Command Executed',
+      description: `Early access was initiated by ${interaction.user.tag}`,
+      fields: [
+        { name: 'Message Link', value: `[Jump to Message](${earlyAccessMessage.url})`, inline: true },
+        { name: 'Link Provided', value: sessionLink },
+      ],
+    });
 
     const collector = earlyAccessMessage.createMessageComponentCollector({ componentType: ComponentType.Button, time: 3600000 });
     collector.on('collect', async i => {
@@ -175,8 +167,12 @@ module.exports = {
           embeds: [new EmbedBuilder().setDescription(`Session Link: ${sessionLink}`).setColor(embedColor)]
         });
 
-        if (logChannel) {
-          logChannel.send({
+        if (settings?.logChannelId) {
+          let logChannel;
+          try { logChannel = await interaction.client.channels.fetch(settings.logChannelId); } catch { logChannel = null; }
+
+          if (logChannel?.isTextBased()) {
+            logChannel.send({
             embeds: [
               new EmbedBuilder()
                 .setTitle('Early Access Link Used')
@@ -184,7 +180,8 @@ module.exports = {
                 .setColor(embedColor)
                 .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined })
             ]
-          }).catch(() => {});
+            }).catch(() => {});
+          }
         }
       } catch (err) {
         console.error('EA button interaction failed:', err);

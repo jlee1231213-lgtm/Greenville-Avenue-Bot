@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, ComponentType } = require("discord.js");
 const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
+const { sendCommandLog } = require('../../utils/commandLogger');
 const { DEFAULT_RELEASE_EMBED, isLegacyReleaseEmbed } = require('../../utils/defaultEmbeds');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 const STARTUP_REACTION_ID = '1493951094605353062';
@@ -130,6 +131,19 @@ module.exports = {
           .setDescription(`Session has been released successfully.`)
           .setColor(embedColor)
       ]
+    });
+
+    await sendCommandLog({
+      interaction,
+      settings,
+      title: 'Release Command Executed',
+      description: `${interaction.user.tag} released a session.`,
+      fields: [
+        { name: 'Peacetime', value: ptStatus, inline: true },
+        { name: 'FRP Limit', value: frpLimit, inline: true },
+        { name: 'LEO', value: leoStatus, inline: true },
+        { name: 'Release Message', value: `[Jump to Message](${message.url})` },
+      ],
     });
 
     const collector = message.createMessageComponentCollector({

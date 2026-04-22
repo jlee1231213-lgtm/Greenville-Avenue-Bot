@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionsBitField } =
 const Settings = require('../../models/settings');
 const SessionLog = require('../../models/sessionlog');
 const { activeStartupSessions } = require('./startup');
+const { sendCommandLog } = require('../../utils/commandLogger');
 const { v4: uuidv4 } = require('uuid');
 const { DEFAULT_COHOST_EMBED } = require('../../utils/defaultEmbeds');
 
@@ -89,6 +90,16 @@ module.exports = {
       userId,
       timestarted: timestamp,
       timeended: null,
+    });
+
+    await sendCommandLog({
+      interaction,
+      settings,
+      title: 'Cohost Command Executed',
+      description: `${interaction.user.tag} started a cohost session.`,
+      fields: [
+        { name: 'Cohost Message', value: postedMessage?.url ? `[Jump to Message](${postedMessage.url})` : 'Unavailable', inline: true },
+      ],
     });
 
     await interaction.editReply({ content: 'Cohost registered successfully.' });
