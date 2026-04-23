@@ -4,7 +4,13 @@ const path = require('path');
 const StartupSession = require(path.join(__dirname, '../../models/startupsession'));
 const Settings = require('../../models/settings');
 const { sendCommandLog } = require('../../utils/commandLogger');
-const { DEFAULT_SETUP_EMBED, DEFAULT_STARTUP_EMBED, isLegacySetupEmbed, isLegacyStartupEmbed } = require('../../utils/defaultEmbeds');
+const {
+  DEFAULT_SETUP_EMBED,
+  DEFAULT_STARTUP_EMBED,
+  DEFAULT_STARTUP_EMBED_VERSION,
+  isLegacySetupEmbed,
+  isLegacyStartupEmbed,
+} = require('../../utils/defaultEmbeds');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 const activeStartupSessions = new Map();
@@ -83,6 +89,7 @@ module.exports = {
               guildId: interaction.guild.id,
               embedcolor: '#ab6cc4',
               staffRoleId: null,
+              startupEmbedVersion: DEFAULT_STARTUP_EMBED_VERSION,
               startupEmbed: DEFAULT_STARTUP_EMBED,
               setupEmbed: DEFAULT_SETUP_EMBED
             }),
@@ -103,7 +110,8 @@ module.exports = {
       const embedColor = settings.embedcolor || '#ab6cc4';
       let needsSettingsSave = false;
 
-      if (isLegacyStartupEmbed(settings.startupEmbed)) {
+      if (settings.startupEmbedVersion !== DEFAULT_STARTUP_EMBED_VERSION || isLegacyStartupEmbed(settings.startupEmbed)) {
+        settings.startupEmbedVersion = DEFAULT_STARTUP_EMBED_VERSION;
         settings.startupEmbed = DEFAULT_STARTUP_EMBED;
         needsSettingsSave = true;
       }

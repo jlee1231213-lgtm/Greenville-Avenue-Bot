@@ -1,3 +1,7 @@
+const DEFAULT_STARTUP_EMBED_VERSION = 2;
+const DEFAULT_EA_EMBED_VERSION = 2;
+const DEFAULT_RELEASE_EMBED_VERSION = 2;
+
 const DEFAULT_STARTUP_EMBED = {
   title: '<:gvry_Ypin:1489356357735026778> __**Greenville Avenue – Session Start Up**__',
   description: `<:green_arrow_recolor:1489356754570580069>  $user is currently hosting a Greenville Avenue session.
@@ -108,9 +112,12 @@ function getDefaultEmbed(field) {
 module.exports = {
   DEFAULT_COHOST_EMBED,
   DEFAULT_EA_EMBED,
+  DEFAULT_EA_EMBED_VERSION,
   DEFAULT_RELEASE_EMBED,
+  DEFAULT_RELEASE_EMBED_VERSION,
   DEFAULT_SETUP_EMBED,
   DEFAULT_STARTUP_EMBED,
+  DEFAULT_STARTUP_EMBED_VERSION,
   getDefaultEmbed,
   isLegacyReleaseEmbed,
   isLegacySetupEmbed,

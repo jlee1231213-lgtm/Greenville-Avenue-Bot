@@ -182,9 +182,9 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setColor(embedColor)
             .setDescription([
-                `<:gvry_ydot:1489356230785761382> Thank you for joining the session hosted by <@${host.id}>, we hope you had an enjoyable experience throughout the session!`,
+                `<:gvry_ydot:1489356230785761382> Thank you for joining the Greenville Avenue session hosted by <@${host.id}>. We hope you had an enjoyable experience throughout the session!`,
                 '',
-                '<:green_arrow_recolor:1489356754570580069>**| Session Information**',
+                '<:green_arrow_recolor:1489356754570580069>**| Greenville Avenue Session Information**',
                 `-# <:gvry_ydot:1489356230785761382> **Host:** <@${host.id}>`,
                 `-# <:gvry_ydot:1489356230785761382> **Start Time:** ${startTime}`,
                 `-# <:gvry_ydot:1489356230785761382> **End Time:** ${endTime}`,

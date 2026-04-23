@@ -3,7 +3,7 @@ const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
 const { sendCommandLog } = require('../../utils/commandLogger');
 const { getConfiguredRoleIds, memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
-const { DEFAULT_EA_EMBED } = require('../../utils/defaultEmbeds');
+const { DEFAULT_EA_EMBED, DEFAULT_EA_EMBED_VERSION } = require('../../utils/defaultEmbeds');
 const STARTUP_REACTION_ID = '1493951094605353062';
 const STARTUP_REACTION_FALLBACK = '✅';
 
@@ -66,13 +66,13 @@ module.exports = {
 
     const sessionLink = interaction.options.getString('link');
     const userMention = `<@${interaction.user.id}>`;
-    if (settings.eaEmbedVersion !== 1) {
+    if (settings.eaEmbedVersion !== DEFAULT_EA_EMBED_VERSION) {
       settings.eaEmbed = DEFAULT_EA_EMBED;
-      settings.eaEmbedVersion = 1;
+      settings.eaEmbedVersion = DEFAULT_EA_EMBED_VERSION;
       await settings.save();
     }
 
-    const eaTemplate = settings.eaEmbedVersion === 1 ? settings.eaEmbed : DEFAULT_EA_EMBED;
+    const eaTemplate = settings.eaEmbedVersion === DEFAULT_EA_EMBED_VERSION ? settings.eaEmbed : DEFAULT_EA_EMBED;
 
     const embed = new EmbedBuilder()
       .setTitle((eaTemplate.title || DEFAULT_EA_EMBED.title).replace(/\$user/g, userMention))

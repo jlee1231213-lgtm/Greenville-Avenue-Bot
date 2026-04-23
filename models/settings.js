@@ -18,6 +18,7 @@ const settingsSchema = new mongoose.Schema({
       cap: { type: Number, required: true }
     }
   ],
+  startupEmbedVersion: { type: Number, default: 0 },
   startupEmbed: { title: String, description: String, image: String, thumbnail: String },
   cohostEmbedVersion: { type: Number, default: 0 },
   eaEmbedVersion: { type: Number, default: 0 },
@@ -28,6 +29,7 @@ const settingsSchema = new mongoose.Schema({
   cohostendEmbed: { title: String, description: String, image: String, thumbnail: String },
   ticketSupportEmbed: { title: String, description: String, image: String, thumbnail: String, placeholder: String },
   setupEmbed: { title: String, description: String, image: String, thumbnail: String },
+  releaseEmbedVersion: { type: Number, default: 0 },
   releaseEmbed: { title: String, description: String, image: String, thumbnail: String },
   reinvitesEmbed: { title: String, description: String, image: String, thumbnail: String },
   overEmbed: { title: String, description: String, image: String, thumbnail: String },

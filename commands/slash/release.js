@@ -1,7 +1,11 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, ComponentType } = require("discord.js");
 const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
-const { DEFAULT_RELEASE_EMBED, isLegacyReleaseEmbed } = require('../../utils/defaultEmbeds');
+const {
+  DEFAULT_RELEASE_EMBED,
+  DEFAULT_RELEASE_EMBED_VERSION,
+  isLegacyReleaseEmbed,
+} = require('../../utils/defaultEmbeds');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 const STARTUP_REACTION_ID = '1493951094605353062';
 const STARTUP_REACTION_FALLBACK = '✅';
@@ -65,7 +69,8 @@ module.exports = {
     const frpLimit = interaction.options.getString('frplimit');
     const leoStatus = interaction.options.getString('leo');
 
-    if (settings && isLegacyReleaseEmbed(settings.releaseEmbed)) {
+    if (settings && (settings.releaseEmbedVersion !== DEFAULT_RELEASE_EMBED_VERSION || isLegacyReleaseEmbed(settings.releaseEmbed))) {
+      settings.releaseEmbedVersion = DEFAULT_RELEASE_EMBED_VERSION;
       settings.releaseEmbed = DEFAULT_RELEASE_EMBED;
       await settings.save();
     }
