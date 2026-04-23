@@ -134,7 +134,7 @@ module.exports = {
       const reacted = await addStartupReaction(message);
 
       if (!reacted) {
-        return interaction.editReply({ content: 'Session could not start because I could not add the startup reaction. Check Add Reactions and Use External Emojis permissions.' });
+        return interaction.editReply({ content: 'Session started, but I could not add the startup reaction. Please make sure I have Add Reactions and Use External Emojis permissions.' });
       }
 
       const sessionId = uuidv4();

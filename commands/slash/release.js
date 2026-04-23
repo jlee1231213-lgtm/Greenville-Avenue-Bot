@@ -1,33 +1,11 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, ComponentType } = require("discord.js");
 const StartupSession = require('../../models/startupsession');
 const Settings = require('../../models/settings');
-const { sendCommandLog } = require('../../utils/commandLogger');
 const { DEFAULT_RELEASE_EMBED, isLegacyReleaseEmbed } = require('../../utils/defaultEmbeds');
+const { setEmbedMedia } = require('../../utils/embedMedia');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 const STARTUP_REACTION_ID = '1493951094605353062';
 const STARTUP_REACTION_FALLBACK = '✅';
-const RELEASE_EMBED_IMAGE = 'https://cdn.discordapp.com/attachments/1489657569030049844/1495495694700777542/Screenshot_20260419_214551.jpg';
-
-function normalizeEmbedMediaUrl(url) {
-  if (typeof url !== 'string') return null;
-
-  const trimmed = url.trim();
-  if (!trimmed) return null;
-
-  try {
-    const parsed = new URL(trimmed);
-    if (!/^https?:$/i.test(parsed.protocol)) return null;
-
-    if (parsed.hostname === 'media.discordapp.net' && parsed.pathname.includes('/attachments/')) {
-      parsed.hostname = 'cdn.discordapp.com';
-      parsed.search = '';
-    }
-
-    return parsed.toString();
-  } catch {
-    return null;
-  }
-}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -68,7 +46,7 @@ module.exports = {
     const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
     const settings = await Settings.findOne({ guildId: interaction.guild.id });
     const embedColor = settings?.embedcolor || '#155fa0';
-    if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId, settings?.adminRoleId)) {
+    if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId)) {
       return interaction.reply({
         embeds: [
           new EmbedBuilder()
@@ -106,11 +84,10 @@ module.exports = {
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    const imageUrl = normalizeEmbedMediaUrl(releaseTemplate.image || RELEASE_EMBED_IMAGE);
-    const thumbnailUrl = normalizeEmbedMediaUrl(releaseTemplate.thumbnail);
-
-    if (imageUrl) embed.setImage(imageUrl);
-    if (thumbnailUrl) embed.setThumbnail(thumbnailUrl);
+    setEmbedMedia(embed, {
+      image: releaseTemplate.image || DEFAULT_RELEASE_EMBED.image,
+      thumbnail: releaseTemplate.thumbnail,
+    });
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
@@ -131,19 +108,6 @@ module.exports = {
           .setDescription(`Session has been released successfully.`)
           .setColor(embedColor)
       ]
-    });
-
-    await sendCommandLog({
-      interaction,
-      settings,
-      title: 'Release Command Executed',
-      description: `${interaction.user.tag} released a session.`,
-      fields: [
-        { name: 'Peacetime', value: ptStatus, inline: true },
-        { name: 'FRP Limit', value: frpLimit, inline: true },
-        { name: 'LEO', value: leoStatus, inline: true },
-        { name: 'Release Message', value: `[Jump to Message](${message.url})` },
-      ],
     });
 
     const collector = message.createMessageComponentCollector({

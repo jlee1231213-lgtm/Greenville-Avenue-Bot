@@ -1,7 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
-const StartupSession = require('../../models/startupsession');
-const { sendCommandLog } = require('../../utils/commandLogger');
 const { DEFAULT_SETUP_EMBED, isLegacySetupEmbed } = require('../../utils/defaultEmbeds');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
@@ -11,8 +9,6 @@ module.exports = {
     .setDescription('Post the setup notice'),
   async execute(interaction) {
     try {
-      await interaction.deferReply({ flags: 64 });
-
       const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
       let settings = await Settings.findOne({ guildId: interaction.guild.id });
 
@@ -25,7 +21,7 @@ module.exports = {
       }
 
       if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings.staffRoleId)) {
-        return interaction.editReply({ content: 'You must have the Staff role.' });
+        return interaction.reply({ content: 'You must have the Staff role.', flags: 64 });
       }
 
       if (isLegacySetupEmbed(settings.setupEmbed)) {
@@ -45,34 +41,7 @@ module.exports = {
         embed.setImage(setupTemplate.image || DEFAULT_SETUP_EMBED.image);
       }
 
-      const latestStartup = await StartupSession.findOne({
-        guildId: interaction.guild.id,
-        channelId: interaction.channel.id,
-      }).sort({ createdAt: -1 });
-
-      if (!latestStartup) {
-        return interaction.editReply({ content: 'No startup message found in this channel. Run `/startup` first.' });
-      }
-
-      const startupMessage = await interaction.channel.messages.fetch(latestStartup.messageId).catch(() => null);
-      if (!startupMessage) {
-        return interaction.editReply({ content: 'Startup message could not be found. Please run `/startup` again.' });
-      }
-
-      const setupMessage = await startupMessage.reply({ embeds: [embed] });
-
-      await sendCommandLog({
-        interaction,
-        settings,
-        title: 'Setup Command Executed',
-        description: `${interaction.user.tag} posted setup for a startup session.`,
-        fields: [
-          { name: 'Setup Message', value: `[Jump to Message](${setupMessage.url})`, inline: true },
-          { name: 'Startup Message', value: `[Jump to Message](https://discord.com/channels/${interaction.guild.id}/${interaction.channel.id}/${startupMessage.id})`, inline: true },
-        ],
-      });
-
-      await interaction.editReply({ content: 'Setup notice sent as a reply to the latest startup message.' });
+      await interaction.reply({ embeds: [embed] });
     } catch (error) {
       if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({ content: '❌ Error running setup command.', flags: 64 });
