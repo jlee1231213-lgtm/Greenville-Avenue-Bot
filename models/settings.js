@@ -28,6 +28,7 @@ const settingsSchema = new mongoose.Schema({
   cohostEmbed: { title: String, description: String, image: String, thumbnail: String },
   cohostendEmbed: { title: String, description: String, image: String, thumbnail: String },
   ticketSupportEmbed: { title: String, description: String, image: String, thumbnail: String, placeholder: String },
+  setupEmbedVersion: { type: Number, default: 0 },
   setupEmbed: { title: String, description: String, image: String, thumbnail: String },
   releaseEmbedVersion: { type: Number, default: 0 },
   releaseEmbed: { title: String, description: String, image: String, thumbnail: String },

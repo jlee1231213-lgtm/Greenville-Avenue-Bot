@@ -1,4 +1,5 @@
 const DEFAULT_STARTUP_EMBED_VERSION = 2;
+const DEFAULT_SETUP_EMBED_VERSION = 2;
 const DEFAULT_EA_EMBED_VERSION = 2;
 const DEFAULT_RELEASE_EMBED_VERSION = 2;
 
@@ -17,8 +18,10 @@ All participants are required to carefully review and understand the Server Docu
 };
 
 const DEFAULT_SETUP_EMBED = {
-  title: '> <a:loading:1495624404053262406> **Greenville Avenue, Setup!** <a:loading:1495624404053262406>',
-  description: '<a:arrow3:1489298553942708364> $user is officially setting up! Please do **NOT** ping the host. Please patiently wait for the **Host** to release Early Access for server boosters, staff team, public services, and anyone with the Early Access role. This setup should take roughly **5-10** minutes until Early Access. Please wait until then.',
+  title: '<:BlueLine_STAR:1489642237758275745> __**Greenville Avenue – Session Setup**__',
+  description: `<:green_arrow_recolor:1489356754570580069>  $user is currently finalizing the setup for the roleplay session.
+
+<:green_arrow_recolor:1489356754570580069>  We appreciate your patience while the Staff Team completes all necessary preparations to ensure a structured and high quality experience.`,
 };
 
 const DEFAULT_RELEASE_EMBED = {
@@ -116,6 +119,7 @@ module.exports = {
   DEFAULT_RELEASE_EMBED,
   DEFAULT_RELEASE_EMBED_VERSION,
   DEFAULT_SETUP_EMBED,
+  DEFAULT_SETUP_EMBED_VERSION,
   DEFAULT_STARTUP_EMBED,
   DEFAULT_STARTUP_EMBED_VERSION,
   getDefaultEmbed,

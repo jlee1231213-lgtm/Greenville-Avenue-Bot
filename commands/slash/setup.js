@@ -1,6 +1,10 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
-const { DEFAULT_SETUP_EMBED, isLegacySetupEmbed } = require('../../utils/defaultEmbeds');
+const {
+  DEFAULT_SETUP_EMBED,
+  DEFAULT_SETUP_EMBED_VERSION,
+  isLegacySetupEmbed,
+} = require('../../utils/defaultEmbeds');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 module.exports = {
@@ -16,6 +20,7 @@ module.exports = {
         settings = await Settings.create({
           guildId: interaction.guild.id,
           embedcolor: '#ab6cc4',
+          setupEmbedVersion: DEFAULT_SETUP_EMBED_VERSION,
           setupEmbed: DEFAULT_SETUP_EMBED,
         });
       }
@@ -24,7 +29,8 @@ module.exports = {
         return interaction.reply({ content: 'You must have the Staff role.', flags: 64 });
       }
 
-      if (isLegacySetupEmbed(settings.setupEmbed)) {
+      if (settings.setupEmbedVersion !== DEFAULT_SETUP_EMBED_VERSION || isLegacySetupEmbed(settings.setupEmbed)) {
+        settings.setupEmbedVersion = DEFAULT_SETUP_EMBED_VERSION;
         settings.setupEmbed = DEFAULT_SETUP_EMBED;
         await settings.save();
       }

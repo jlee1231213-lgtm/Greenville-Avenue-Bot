@@ -6,6 +6,7 @@ const Settings = require('../../models/settings');
 const { sendCommandLog } = require('../../utils/commandLogger');
 const {
   DEFAULT_SETUP_EMBED,
+  DEFAULT_SETUP_EMBED_VERSION,
   DEFAULT_STARTUP_EMBED,
   DEFAULT_STARTUP_EMBED_VERSION,
   isLegacySetupEmbed,
@@ -91,6 +92,7 @@ module.exports = {
               staffRoleId: null,
               startupEmbedVersion: DEFAULT_STARTUP_EMBED_VERSION,
               startupEmbed: DEFAULT_STARTUP_EMBED,
+              setupEmbedVersion: DEFAULT_SETUP_EMBED_VERSION,
               setupEmbed: DEFAULT_SETUP_EMBED
             }),
             'Creating server settings'
@@ -115,7 +117,8 @@ module.exports = {
         settings.startupEmbed = DEFAULT_STARTUP_EMBED;
         needsSettingsSave = true;
       }
-      if (isLegacySetupEmbed(settings.setupEmbed)) {
+      if (settings.setupEmbedVersion !== DEFAULT_SETUP_EMBED_VERSION || isLegacySetupEmbed(settings.setupEmbed)) {
+        settings.setupEmbedVersion = DEFAULT_SETUP_EMBED_VERSION;
         settings.setupEmbed = DEFAULT_SETUP_EMBED;
         needsSettingsSave = true;
       }
