@@ -6,6 +6,7 @@ const { activeStartupSessions } = require('./startup');
 const { sendCommandLog, sendQuotaStatusLog } = require('../../utils/commandLogger');
 const { getConfiguredRoleIds } = require('../../utils/roleHelpers');
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+const MIN_SESSION_LOG_DURATION_MS = 20 * 60 * 1000;
 const DEFAULT_CONCLUDED_IMAGE_URL = 'https://cdn.discordapp.com/attachments/1450473391134871565/1489434332081950841/Screenshot_20260402_214940.jpg';
 
 function normalizeDiscordMediaUrl(url) {
@@ -60,6 +61,12 @@ function formatDuration(start, end) {
     if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
     if (hours > 0) return `${hours}h`;
     return `${minutes}m`;
+}
+
+function shouldLogSession(start, end) {
+    if (!(start instanceof Date) || Number.isNaN(start.getTime())) return false;
+    if (!(end instanceof Date) || Number.isNaN(end.getTime())) return false;
+    return end - start >= MIN_SESSION_LOG_DURATION_MS;
 }
 
 async function purgeNonPinnedMessages(channel) {
@@ -168,6 +175,7 @@ module.exports = {
         }).sort({ createdAt: -1 });
         const startupDate = latestStartupSession?.createdAt ? new Date(latestStartupSession.createdAt) : null;
         const now = new Date();
+        const qualifiesForSessionLog = shouldLogSession(startupDate, now);
         const startTime = startupDate ? formatDiscordTimestamp(startupDate) : 'Unknown';
         const endTime = formatDiscordTimestamp(now);
         const duration = startupDate ? formatDuration(startupDate, now) : 'Unknown';
@@ -205,6 +213,27 @@ module.exports = {
 
         await interaction.reply({ embeds: [embed] });
 
+        if (qualifiesForSessionLog && startupDate) {
+            const sessionId = latestStartupSession?.messageId
+                ? `startup-${interaction.guild.id}-${latestStartupSession.messageId}`
+                : `concluded-${interaction.guild.id}-${interaction.channel.id}-${interaction.id}`;
+
+            await SessionLog.updateOne(
+                { sessionId },
+                {
+                    $setOnInsert: {
+                        guildId: interaction.guild.id,
+                        sessiontype: 'session',
+                        sessionId,
+                        userId: host.id,
+                        timestarted: startupDate,
+                        timeended: now,
+                    },
+                },
+                { upsert: true }
+            ).catch(() => {});
+        }
+
         await sendCommandLog({
             interaction,
             settings,
@@ -212,6 +241,7 @@ module.exports = {
             description: `${interaction.user.tag} concluded a session.`,
             fields: [
                 { name: 'Duration', value: duration, inline: true },
+                { name: 'Logged', value: qualifiesForSessionLog ? 'Yes (20m+)' : 'No (<20m)', inline: true },
                 { name: 'Notes', value: notes.length > 250 ? `${notes.slice(0, 247)}...` : notes },
             ],
         });
