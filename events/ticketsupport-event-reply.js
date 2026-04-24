@@ -62,6 +62,12 @@ function getTicketSupportRoleIds(guild, settings, type) {
   return guild.roles.cache.has(legacyFallbackRoleId) ? [legacyFallbackRoleId] : [];
 }
 
+function memberHasTicketStaffAccess(member, supportRoleIds) {
+  const roleAccess = supportRoleIds.some(roleId => member.roles?.cache?.has(roleId));
+  const manageChannelsAccess = member.permissions?.has(PermissionsBitField.Flags.ManageChannels);
+  return roleAccess || manageChannelsAccess;
+}
+
 async function getOrCreateTicketData(interaction) {
   let ticketData = await Ticket.findOne({ channelId: interaction.channel.id });
   if (ticketData) return ticketData;
@@ -267,6 +273,14 @@ module.exports = {
       const transcriptChannel = interaction.guild.channels.cache.get(TRANSCRIPT_CHANNEL_ID);
 
       if (interaction.customId === 'claimTicket') {
+        const supportRoleIds = getTicketSupportRoleIds(interaction.guild, settings, ticketData.type);
+        if (!memberHasTicketStaffAccess(interaction.member, supportRoleIds)) {
+          await interaction.reply({
+            content: 'Only the staff team can claim tickets.',
+            ephemeral: true,
+          });
+          return;
+        }
 
         ticketData.claimed = interaction.user.id;
         await ticketData.save();

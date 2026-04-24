@@ -2,7 +2,7 @@ const DEFAULT_STARTUP_EMBED_VERSION = 2;
 const DEFAULT_SETUP_EMBED_VERSION = 2;
 const DEFAULT_COHOST_EMBED_VERSION = 2;
 const DEFAULT_EA_EMBED_VERSION = 2;
-const DEFAULT_RELEASE_EMBED_VERSION = 3;
+const DEFAULT_RELEASE_EMBED_VERSION = 4;
 
 const DEFAULT_STARTUP_EMBED = {
   title: '<:gvry_Ypin:1489356357735026778> __**Greenville Avenue – Session Start Up**__',
@@ -37,7 +37,7 @@ Before joining, all participants must review the Banned Vehicle List and ensure 
 - Law Enforcement Status: $leo
 
 -# <:bell_tts:1489640619318968531>  Failure to comply with session rules may result in moderation actions.`,
-  image: 'https://cdn.discordapp.com/attachments/1489657569030049844/1495495694700777542/Screenshot_20260419_214551.jpg',
+  image: 'https://cdn.discordapp.com/attachments/1489400744858882189/1496109569762394274/Screenshot_20260419_214551.jpg',
 };
 
 const DEFAULT_COHOST_EMBED = {

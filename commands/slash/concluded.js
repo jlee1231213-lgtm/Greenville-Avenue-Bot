@@ -6,7 +6,7 @@ const { activeStartupSessions } = require('./startup');
 const { sendCommandLog, sendQuotaStatusLog } = require('../../utils/commandLogger');
 const { getConfiguredRoleIds } = require('../../utils/roleHelpers');
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
-const DEFAULT_CONCLUDED_IMAGE_URL = 'https://cdn.discordapp.com/attachments/1450473391134871565/1492956124092039329/Screenshot_20260402_214940.jpg';
+const DEFAULT_CONCLUDED_IMAGE_URL = 'https://cdn.discordapp.com/attachments/1450473391134871565/1489434332081950841/Screenshot_20260402_214940.jpg';
 
 function normalizeDiscordMediaUrl(url) {
     if (typeof url !== 'string') return null;
