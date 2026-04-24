@@ -6,6 +6,7 @@ const { activeStartupSessions } = require('./startup');
 const { sendCommandLog, sendQuotaStatusLog } = require('../../utils/commandLogger');
 const { getConfiguredRoleIds } = require('../../utils/roleHelpers');
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+const DEFAULT_CONCLUDED_IMAGE_URL = 'https://cdn.discordapp.com/attachments/1450473391134871565/1492956124092039329/Screenshot_20260402_214940.jpg';
 
 function normalizeDiscordMediaUrl(url) {
     if (typeof url !== 'string') return null;
@@ -14,8 +15,12 @@ function normalizeDiscordMediaUrl(url) {
         const parsedUrl = new URL(url.trim());
         if (!/^https?:$/i.test(parsedUrl.protocol)) return null;
 
-        if (parsedUrl.hostname === 'media.discordapp.net') {
+                if (parsedUrl.hostname === 'media.discordapp.net') {
             parsedUrl.hostname = 'cdn.discordapp.com';
+                }
+
+                if ((parsedUrl.hostname === 'cdn.discordapp.com' || parsedUrl.hostname === 'media.discordapp.net')
+                    && parsedUrl.pathname.includes('/attachments/')) {
             parsedUrl.search = '';
         }
 
@@ -29,6 +34,7 @@ function resolveConcludedImageUrl(settings) {
     const candidates = [
         process.env.CONCLUDED_IMAGE_URL,
         settings?.overEmbed?.image,
+        DEFAULT_CONCLUDED_IMAGE_URL,
     ];
 
     for (const candidate of candidates) {

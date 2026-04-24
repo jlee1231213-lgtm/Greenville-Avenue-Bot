@@ -10,6 +10,28 @@ const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 const STARTUP_REACTION_ID = '1493951094605353062';
 const STARTUP_REACTION_FALLBACK = '✅';
 
+function normalizeDiscordMediaUrl(url) {
+  if (typeof url !== 'string') return null;
+
+  try {
+    const parsedUrl = new URL(url.trim());
+    if (!/^https?:$/i.test(parsedUrl.protocol)) return null;
+
+    if (parsedUrl.hostname === 'media.discordapp.net') {
+      parsedUrl.hostname = 'cdn.discordapp.com';
+    }
+
+    if ((parsedUrl.hostname === 'cdn.discordapp.com' || parsedUrl.hostname === 'media.discordapp.net')
+      && parsedUrl.pathname.includes('/attachments/')) {
+      parsedUrl.search = '';
+    }
+
+    return parsedUrl.toString();
+  } catch {
+    return null;
+  }
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("release")
@@ -88,11 +110,14 @@ module.exports = {
       .setColor(embedColor)
       .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
 
-    if ((releaseTemplate.image || DEFAULT_RELEASE_EMBED.image)?.startsWith('http')) {
-      embed.setImage(releaseTemplate.image || DEFAULT_RELEASE_EMBED.image);
+    const releaseImageUrl = normalizeDiscordMediaUrl(releaseTemplate.image || DEFAULT_RELEASE_EMBED.image);
+    const releaseThumbnailUrl = normalizeDiscordMediaUrl(releaseTemplate.thumbnail);
+
+    if (releaseImageUrl) {
+      embed.setImage(releaseImageUrl);
     }
-    if (releaseTemplate.thumbnail?.startsWith('http')) {
-      embed.setThumbnail(releaseTemplate.thumbnail);
+    if (releaseThumbnailUrl) {
+      embed.setThumbnail(releaseThumbnailUrl);
     }
 
     const row = new ActionRowBuilder().addComponents(

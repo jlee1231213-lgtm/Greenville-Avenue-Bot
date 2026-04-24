@@ -1,7 +1,8 @@
 const DEFAULT_STARTUP_EMBED_VERSION = 2;
 const DEFAULT_SETUP_EMBED_VERSION = 2;
+const DEFAULT_COHOST_EMBED_VERSION = 2;
 const DEFAULT_EA_EMBED_VERSION = 2;
-const DEFAULT_RELEASE_EMBED_VERSION = 2;
+const DEFAULT_RELEASE_EMBED_VERSION = 3;
 
 const DEFAULT_STARTUP_EMBED = {
   title: '<:gvry_Ypin:1489356357735026778> __**Greenville Avenue – Session Start Up**__',
@@ -36,12 +37,12 @@ Before joining, all participants must review the Banned Vehicle List and ensure 
 - Law Enforcement Status: $leo
 
 -# <:bell_tts:1489640619318968531>  Failure to comply with session rules may result in moderation actions.`,
-  image: 'https://media.discordapp.net/attachments/1489657569030049844/1495495694700777542/Screenshot_20260419_214551.jpg?ex=69e67466&is=69e522e6&hm=20e0b4ecf6b358d8f706262befbfaab9d841a028fbc19feda21a97b951ef184d&=&format=webp&width=2160&height=908',
+  image: 'https://cdn.discordapp.com/attachments/1489657569030049844/1495495694700777542/Screenshot_20260419_214551.jpg',
 };
 
 const DEFAULT_COHOST_EMBED = {
   title: '**__Greenville Avenue – Co-Host Notice__**',
-  description: `<:green_arrow_recolor:1489356754570580069> $user has been assigned as the co-host for this session.
+  description: `<:green_arrow_recolor:1489356754570580069>  $user has been assigned as the co-host for this session.
 In the event the host is unavailable, please direct any questions or requests for assistance to the co-host.`,
 };
 
@@ -114,6 +115,7 @@ function getDefaultEmbed(field) {
 
 module.exports = {
   DEFAULT_COHOST_EMBED,
+  DEFAULT_COHOST_EMBED_VERSION,
   DEFAULT_EA_EMBED,
   DEFAULT_EA_EMBED_VERSION,
   DEFAULT_RELEASE_EMBED,

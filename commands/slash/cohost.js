@@ -4,7 +4,7 @@ const SessionLog = require('../../models/sessionlog');
 const { activeStartupSessions } = require('./startup');
 const { sendCommandLog } = require('../../utils/commandLogger');
 const { v4: uuidv4 } = require('uuid');
-const { DEFAULT_COHOST_EMBED } = require('../../utils/defaultEmbeds');
+const { DEFAULT_COHOST_EMBED, DEFAULT_COHOST_EMBED_VERSION } = require('../../utils/defaultEmbeds');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -48,13 +48,13 @@ module.exports = {
       }
     }
 
-    if (settings && settings.cohostEmbedVersion !== 1) {
+    if (settings && settings.cohostEmbedVersion !== DEFAULT_COHOST_EMBED_VERSION) {
       settings.cohostEmbed = DEFAULT_COHOST_EMBED;
-      settings.cohostEmbedVersion = 1;
+      settings.cohostEmbedVersion = DEFAULT_COHOST_EMBED_VERSION;
       await settings.save();
     }
 
-    const cohostTemplate = settings?.cohostEmbedVersion === 1
+    const cohostTemplate = settings?.cohostEmbedVersion === DEFAULT_COHOST_EMBED_VERSION
       ? settings.cohostEmbed
       : DEFAULT_COHOST_EMBED;
     const cohostEmbed = new EmbedBuilder()
