@@ -15,7 +15,30 @@ module.exports = {
             return;
         }
         const commandTimeoutMs = 45000;
+        const acknowledgeAfterMs = 1500;
+        const visibleProgressAfterMs = 10000;
+        let commandFinished = false;
         let commandTimeoutId;
+        let visibleProgressId;
+
+        async function sendVisibleProgress() {
+            if (commandFinished || interaction.replied) return;
+
+            try {
+                if (interaction.deferred) {
+                    await interaction.editReply({
+                        content: `/${interaction.commandName} is still working. If this stays here, check the console for the slow step.`,
+                    });
+                } else {
+                    await interaction.reply({
+                        content: `/${interaction.commandName} is still working. If this stays here, check the console for the slow step.`,
+                        flags: 64,
+                    });
+                }
+            } catch (_) {
+                // Ignore acknowledgement races.
+            }
+        }
 
         const timeoutAcknowledge = setTimeout(async () => {
             if (!interaction.deferred && !interaction.replied) {
@@ -25,7 +48,9 @@ module.exports = {
                     // Ignore acknowledge race conditions.
                 }
             }
-        }, 2000);
+        }, acknowledgeAfterMs);
+
+        visibleProgressId = setTimeout(sendVisibleProgress, visibleProgressAfterMs);
 
         try {
             const timeoutPromise = new Promise((_, reject) => {
@@ -38,6 +63,7 @@ module.exports = {
                 Promise.resolve().then(() => command.execute(interaction)),
                 timeoutPromise,
             ]);
+            commandFinished = true;
 
             // Prevent Discord's "application did not respond" when a command
             // accidentally returns without acknowledging the interaction.
@@ -45,10 +71,16 @@ module.exports = {
                 await interaction.reply({ content: 'Command completed without a response. Please try again.', flags: 64 });
             }
         } catch (err) {
+            commandFinished = true;
             console.error(`[ERROR] Slash command failed: /${interaction.commandName}`, err);
             try {
                 if (interaction.deferred && !interaction.replied) {
-                    await interaction.editReply({ content: 'There was an error executing that command.' });
+                    const isTimeout = err?.message?.includes('timed out');
+                    await interaction.editReply({
+                        content: isTimeout
+                            ? `/${interaction.commandName} timed out. The bot stopped waiting so Discord does not stay stuck on thinking.`
+                            : 'There was an error executing that command.',
+                    });
                 } else if (interaction.replied) {
                     await interaction.followUp({ content: 'There was an error executing that command.', flags: 64 });
                 } else {
@@ -60,6 +92,7 @@ module.exports = {
         } finally {
             clearTimeout(timeoutAcknowledge);
             clearTimeout(commandTimeoutId);
+            clearTimeout(visibleProgressId);
         }
     },
 };
