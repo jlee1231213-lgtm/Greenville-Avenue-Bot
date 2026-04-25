@@ -165,6 +165,8 @@ module.exports = {
                 .setRequired(true)
         ),
     async execute(interaction) {
+        await interaction.deferReply();
+
         const settings = await Settings.findOne({ guildId: interaction.guild.id });
         const embedColor = settings?.embedcolor || '#ab6cc4';
         const imageUrl = resolveConcludedImageUrl(settings);
@@ -211,7 +213,7 @@ module.exports = {
             embed.setImage(imageUrl);
         }
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
 
         if (qualifiesForSessionLog && startupDate) {
             const sessionId = latestStartupSession?.messageId

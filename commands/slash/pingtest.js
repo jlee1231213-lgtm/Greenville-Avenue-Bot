@@ -7,7 +7,9 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            const sent = await interaction.reply({ content: 'Measuring ping...', fetchReply: true });
+            await interaction.deferReply({ flags: 64 });
+
+            const sent = await interaction.fetchReply();
             const ping = sent.createdTimestamp - interaction.createdTimestamp;
             const apiPing = interaction.client.ws.ping;
 
@@ -24,7 +26,11 @@ module.exports = {
             await interaction.editReply({ content: '', embeds: [embed] });
         } catch (error) {
             console.error('Error in pingtest command:', error);
-            await interaction.reply({ content: '❌ Error executing command', ephemeral: true }).catch(() => {});
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({ content: '❌ Error executing command', embeds: [] }).catch(() => {});
+            } else {
+                await interaction.reply({ content: '❌ Error executing command', flags: 64 }).catch(() => {});
+            }
         }
     }
 };

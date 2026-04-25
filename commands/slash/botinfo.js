@@ -8,7 +8,9 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            const sent = await interaction.reply({ content: 'Pinging...', fetchReply: true });
+            await interaction.deferReply();
+
+            const sent = await interaction.fetchReply();
             const ping = sent.createdTimestamp - interaction.createdTimestamp;
             const apiPing = interaction.client.ws.ping;
 
@@ -39,7 +41,11 @@ module.exports = {
             await interaction.editReply({ content: '', embeds: [embed] });
         } catch (error) {
             console.error('Error in botinfo command:', error);
-            await interaction.editReply({ content: '❌ Error retrieving bot information.', embeds: [] }).catch(() => {});
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({ content: '❌ Error retrieving bot information.', embeds: [] }).catch(() => {});
+            } else {
+                await interaction.reply({ content: '❌ Error retrieving bot information.', flags: 64 }).catch(() => {});
+            }
         }
     }
 };

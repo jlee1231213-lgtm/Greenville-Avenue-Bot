@@ -13,6 +13,8 @@ module.exports = {
     .setDescription('Post the setup notice'),
   async execute(interaction) {
     try {
+      await interaction.deferReply();
+
       const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
       let settings = await Settings.findOne({ guildId: interaction.guild.id });
 
@@ -26,7 +28,7 @@ module.exports = {
       }
 
       if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings.staffRoleId)) {
-        return interaction.reply({ content: 'You must have the Staff role.', flags: 64 });
+        return interaction.editReply({ content: 'You must have the Staff role.' });
       }
 
       if (settings.setupEmbedVersion !== DEFAULT_SETUP_EMBED_VERSION || isLegacySetupEmbed(settings.setupEmbed)) {
@@ -47,7 +49,7 @@ module.exports = {
         embed.setImage(setupTemplate.image || DEFAULT_SETUP_EMBED.image);
       }
 
-      await interaction.reply({ embeds: [embed] });
+      await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({ content: '❌ Error running setup command.', flags: 64 });
