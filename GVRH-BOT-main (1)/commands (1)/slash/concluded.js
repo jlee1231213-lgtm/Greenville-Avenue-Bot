@@ -1,9 +1,11 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
 const StartupSession = require('../../models/startupsession');
+const SessionLog = require('../../models/sessionlog');
 const { activeStartupSessions } = require('./startup');
 const { normalizeEmbedMediaUrl } = require('../../utils/embedMedia');
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+const MIN_SESSION_LOG_DURATION_MS = 20 * 60 * 1000;
 const CONCLUDED_STEP_TIMEOUT_MS = 10000;
 
 function withTimeout(promise, fallbackValue, label, timeoutMs = CONCLUDED_STEP_TIMEOUT_MS) {
@@ -36,6 +38,12 @@ function formatDuration(start, end) {
     if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
     if (hours > 0) return `${hours}h`;
     return `${minutes}m`;
+}
+
+function shouldLogSession(start, end) {
+    if (!(start instanceof Date) || Number.isNaN(start.getTime())) return false;
+    if (!(end instanceof Date) || Number.isNaN(end.getTime())) return false;
+    return end - start >= MIN_SESSION_LOG_DURATION_MS;
 }
 
 async function purgeNonPinnedMessages(channel, protectedMessageIds = new Set()) {
@@ -97,6 +105,7 @@ module.exports = {
         );
         const startupDate = latestStartupSession?.createdAt ? new Date(latestStartupSession.createdAt) : null;
         const now = new Date();
+        const qualifiesForSessionLog = shouldLogSession(startupDate, now);
         const startTime = startupDate ? formatDiscordTimestamp(startupDate) : 'Unknown';
         const endTime = formatDiscordTimestamp(now);
         const duration = startupDate ? formatDuration(startupDate, now) : 'Unknown';
@@ -135,6 +144,11 @@ module.exports = {
         setImmediate(() => {
             runConcludedCleanup({
                 interaction,
+                latestStartupSession,
+                startupDate,
+                now,
+                qualifiesForSessionLog,
+                host,
                 protectedMessageIds: new Set([concludedMessage.id]),
             }).catch(error => {
                 console.error('[ERROR] /concluded background cleanup failed:', error);
@@ -143,7 +157,15 @@ module.exports = {
     },
 };
 
-async function runConcludedCleanup({ interaction, protectedMessageIds }) {
+async function runConcludedCleanup({
+    interaction,
+    latestStartupSession,
+    startupDate,
+    now,
+    qualifiesForSessionLog,
+    host,
+    protectedMessageIds,
+}) {
     await withTimeout(
         purgeNonPinnedMessages(interaction.channel, protectedMessageIds),
         null,
@@ -164,5 +186,30 @@ async function runConcludedCleanup({ interaction, protectedMessageIds }) {
         if (data?.type === 'session' || data?.type === 'cohost') {
             activeStartupSessions.delete(sessionId);
         }
+    }
+
+    if (qualifiesForSessionLog && startupDate) {
+        const sessionId = latestStartupSession?.messageId
+            ? `startup-${interaction.guild.id}-${latestStartupSession.messageId}`
+            : `concluded-${interaction.guild.id}-${interaction.channel.id}-${interaction.id}`;
+
+        await withTimeout(
+            SessionLog.updateOne(
+                { sessionId },
+                {
+                    $set: {
+                        guildId: interaction.guild.id,
+                        sessiontype: 'session',
+                        sessionId,
+                        userId: host.id,
+                        timestarted: startupDate,
+                        timeended: now,
+                    },
+                },
+                { upsert: true }
+            ),
+            null,
+            'saving session log'
+        );
     }
 }

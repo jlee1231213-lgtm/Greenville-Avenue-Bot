@@ -303,7 +303,7 @@ async function runConcludedCleanup({
                 SessionLog.updateOne(
                 { sessionId },
                 {
-                    $setOnInsert: {
+                    $set: {
                         guildId: interaction.guild.id,
                         sessiontype: 'session',
                         sessionId,
