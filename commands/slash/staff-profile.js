@@ -1,7 +1,23 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const Settings = require('../../models/settings');
 const SessionLog = require('../../models/sessionlog');
-const ModLog = require('../../models/modlogs');
+
+function withTimeout(promise, fallbackValue, label) {
+  let timeoutId;
+  const timeout = new Promise(resolve => {
+    timeoutId = setTimeout(() => {
+      console.warn(`[WARN] /staff-profile ${label} timed out. Using fallback value.`);
+      resolve(fallbackValue);
+    }, 5000);
+  });
+
+  return Promise.race([promise, timeout])
+    .catch(error => {
+      console.warn(`[WARN] /staff-profile ${label} failed:`, error?.message || error);
+      return fallbackValue;
+    })
+    .finally(() => clearTimeout(timeoutId));
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,13 +33,26 @@ module.exports = {
     await interaction.deferReply();
 
     const user = interaction.options.getUser('user') || interaction.user;
-    const settings = await Settings.findOne({ guildId: interaction.guild.id });
+    const guildId = interaction.guild.id;
+    const settings = await withTimeout(
+      Settings.findOne({ guildId }).lean().exec(),
+      null,
+      'settings lookup'
+    );
     const embedColor = settings?.embedcolor || '#ffffff';
 
-    const sessionCount = await SessionLog.countDocuments({ userId: user.id, sessiontype: 'session' });
-    const cohostCount = await SessionLog.countDocuments({ userId: user.id, sessiontype: 'cohost' });
-    const moderationCount = await ModLog.countDocuments({ userId: user.id, type: 'moderation' });
-    const strikeCount = await ModLog.countDocuments({ targetId: user.id, type: 'staff-strike' });
+    const [sessionCount, cohostCount] = await Promise.all([
+      withTimeout(
+        SessionLog.countDocuments({ guildId, userId: user.id, sessiontype: 'session' }).maxTimeMS(5000).exec(),
+        0,
+        'hosted session count'
+      ),
+      withTimeout(
+        SessionLog.countDocuments({ guildId, userId: user.id, sessiontype: 'cohost' }).maxTimeMS(5000).exec(),
+        0,
+        'cohost session count'
+      ),
+    ]);
 
     const embed = new EmbedBuilder()
       .setTitle(`Staff Profile - ${user.tag}`)

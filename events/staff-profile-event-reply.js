@@ -2,6 +2,23 @@ const { EmbedBuilder } = require('discord.js');
 const Settings = require('../models/settings');
 const SessionLog = require('../models/sessionlog');
 
+function withTimeout(promise, fallbackValue, label) {
+  let timeoutId;
+  const timeout = new Promise(resolve => {
+    timeoutId = setTimeout(() => {
+      console.warn(`[WARN] staff profile ${label} timed out. Using fallback value.`);
+      resolve(fallbackValue);
+    }, 5000);
+  });
+
+  return Promise.race([promise, timeout])
+    .catch(error => {
+      console.warn(`[WARN] staff profile ${label} failed:`, error?.message || error);
+      return fallbackValue;
+    })
+    .finally(() => clearTimeout(timeoutId));
+}
+
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction) {
@@ -16,11 +33,25 @@ module.exports = {
     try {
       await interaction.deferReply({ flags: 64 });
 
-      const settings = await Settings.findOne({ guildId: interaction.guild.id });
+      const guildId = interaction.guild.id;
+      const settings = await withTimeout(
+        Settings.findOne({ guildId }).lean().exec(),
+        null,
+        'settings lookup'
+      );
       const embedColor = settings?.embedcolor || '#ab6cc4';
 
       if (type === 'sessions') {
-        const sessions = await SessionLog.find({ userId, sessiontype: 'session' }).sort({ timestarted: -1 });
+        const sessions = await withTimeout(
+          SessionLog.find({ guildId, userId, sessiontype: 'session' })
+            .sort({ timestarted: -1 })
+            .limit(11)
+            .maxTimeMS(5000)
+            .lean()
+            .exec(),
+          [],
+          'hosted sessions lookup'
+        );
         const description = sessions.length
           ? sessions.map(s => {
               const start = s.timestarted.toLocaleString();
@@ -39,10 +70,18 @@ module.exports = {
       }
 
       if (type === 'cohost') {
-        const cohosts = await SessionLog.find({ userId, sessiontype: 'cohost' }).sort({ timestarted: -1 });
-        const itemsPerPage = 11;
+        const cohosts = await withTimeout(
+          SessionLog.find({ guildId, userId, sessiontype: 'cohost' })
+            .sort({ timestarted: -1 })
+            .limit(11)
+            .maxTimeMS(5000)
+            .lean()
+            .exec(),
+          [],
+          'cohost sessions lookup'
+        );
         const description = cohosts.length
-          ? cohosts.slice(0, itemsPerPage).map(s => {
+          ? cohosts.map(s => {
               const start = s.timestarted.toLocaleString();
               const end = s.timeended ? s.timeended.toLocaleString() : 'Still Active';
               const duration = s.timeended ? ((s.timeended - s.timestarted)/1000).toFixed(0)+'s' : 'N/A';
