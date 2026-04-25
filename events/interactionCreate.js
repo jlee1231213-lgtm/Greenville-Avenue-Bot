@@ -4,6 +4,8 @@ module.exports = {
         if (!interaction.isChatInputCommand()) return;
         const command = client.commands.get(interaction.commandName);
         if (!command) return;
+        const commandTimeoutMs = 15000;
+        let commandTimeoutId;
 
         const timeoutAcknowledge = setTimeout(async () => {
             if (!interaction.deferred && !interaction.replied) {
@@ -16,7 +18,16 @@ module.exports = {
         }, 2000);
 
         try {
-            await command.execute(interaction);
+            const timeoutPromise = new Promise((_, reject) => {
+                commandTimeoutId = setTimeout(() => {
+                    reject(new Error(`Command /${interaction.commandName} timed out after ${commandTimeoutMs}ms`));
+                }, commandTimeoutMs);
+            });
+
+            await Promise.race([
+                Promise.resolve().then(() => command.execute(interaction)),
+                timeoutPromise,
+            ]);
         } catch (err) {
             console.error(`[ERROR] Slash command failed: /${interaction.commandName}`, err);
             try {
@@ -32,6 +43,7 @@ module.exports = {
             }
         } finally {
             clearTimeout(timeoutAcknowledge);
+            clearTimeout(commandTimeoutId);
         }
     },
 };
