@@ -18,8 +18,8 @@ module.exports = {
             const Eco = require('../../models/eco');
             let userEco = await Eco.findOneAndUpdate(
                 { userId: targetUser.id },
-                {},
-                { returnDocument: 'after', upsert: true }
+                { $setOnInsert: { userId: targetUser.id } },
+                { new: true, upsert: true, setDefaultsOnInsert: true }
             );
             const cash = userEco.cash || 0;
             const bank = userEco.bank || 0;

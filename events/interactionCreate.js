@@ -18,9 +18,11 @@ module.exports = {
         try {
             await command.execute(interaction);
         } catch (err) {
-            console.error(err);
+            console.error(`[ERROR] Slash command failed: /${interaction.commandName}`, err);
             try {
-                if (interaction.deferred || interaction.replied) {
+                if (interaction.deferred && !interaction.replied) {
+                    await interaction.editReply({ content: 'There was an error executing that command.' });
+                } else if (interaction.replied) {
                     await interaction.followUp({ content: 'There was an error executing that command.', flags: 64 });
                 } else {
                     await interaction.reply({ content: 'There was an error executing that command.', flags: 64 });

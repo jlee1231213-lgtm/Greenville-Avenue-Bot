@@ -15,21 +15,23 @@ module.exports = {
       guild: interaction.guild?.id
     });
     await interaction.deferReply();
-    const { guild, user } = interaction;
 
-    let settings;
     try {
-      settings = await Settings.findOne({ guildId: guild.id });
-    } catch (err) {
-      console.error("Error fetching settings:", err);
-      return await interaction.editReply({ content: '❌ Error fetching settings from database.' });
-    }
-    const embedColor = settings?.embedcolor || "#ff9933";
+      const { guild, user } = interaction;
 
-    const cooldownTime = 30 * 60 * 1000;
-    const now = Date.now();
+      let settings;
+      try {
+        settings = await Settings.findOne({ guildId: guild.id });
+      } catch (err) {
+        console.error("Error fetching settings:", err);
+        return await interaction.editReply({ content: '❌ Error fetching settings from database.' });
+      }
+      const embedColor = settings?.embedcolor || "#ff9933";
 
-    const workScenarios = [
+      const cooldownTime = 30 * 60 * 1000;
+      const now = Date.now();
+
+      const workScenarios = [
       "You mowed your neighbour's lawn and got",
       "You washed cars in your area and earned",
       "You delivered pizza around town and received",
@@ -83,69 +85,72 @@ module.exports = {
       "You gave someone driving lessons and earned"
     ];
 
-    const scenario = workScenarios[Math.floor(Math.random() * workScenarios.length)];
+      const scenario = workScenarios[Math.floor(Math.random() * workScenarios.length)];
 
-    let userEco = await Eco.findOne({ userId: user.id });
-    if (!userEco) {
-      userEco = new Eco({ userId: user.id });
-    }
-
-    const lastWorkAt = userEco.lastWork ? new Date(userEco.lastWork).getTime() : null;
-    if (lastWorkAt && now - lastWorkAt < cooldownTime) {
-      const remaining = cooldownTime - (now - lastWorkAt);
-      const minutes = Math.floor(remaining / 60000);
-      const seconds = Math.floor((remaining % 60000) / 1000);
-      console.log("/work cooldown active", { user: user.id, remaining });
-      return await interaction.editReply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor(embedColor)
-            .setDescription(`You need to wait **${minutes}m ${seconds}s** before working again.`)
-        ],
-        ephemeral: true
-      });
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    let workStreak = userEco.workStreak || 0;
-    if (!lastWorkAt) {
-      workStreak = 1;
-    } else {
-      const lastWorkDate = new Date(lastWorkAt);
-      const lastWorkDay = new Date(lastWorkDate);
-      lastWorkDay.setHours(0, 0, 0, 0);
-
-      if (lastWorkDay.getTime() === yesterday.getTime()) {
-        workStreak += 1;
-      } else if (lastWorkDay.getTime() !== today.getTime()) {
-        workStreak = 1;
+      let userEco = await Eco.findOne({ userId: user.id });
+      if (!userEco) {
+        userEco = new Eco({ userId: user.id });
       }
+
+      const lastWorkAt = userEco.lastWork ? new Date(userEco.lastWork).getTime() : null;
+      if (lastWorkAt && now - lastWorkAt < cooldownTime) {
+        const remaining = cooldownTime - (now - lastWorkAt);
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        console.log("/work cooldown active", { user: user.id, remaining });
+        return await interaction.editReply({
+          embeds: [
+            new EmbedBuilder()
+              .setColor(embedColor)
+              .setDescription(`You need to wait **${minutes}m ${seconds}s** before working again.`)
+          ]
+        });
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      let workStreak = userEco.workStreak || 0;
+      if (!lastWorkAt) {
+        workStreak = 1;
+      } else {
+        const lastWorkDate = new Date(lastWorkAt);
+        const lastWorkDay = new Date(lastWorkDate);
+        lastWorkDay.setHours(0, 0, 0, 0);
+
+        if (lastWorkDay.getTime() === yesterday.getTime()) {
+          workStreak += 1;
+        } else if (lastWorkDay.getTime() !== today.getTime()) {
+          workStreak = 1;
+        }
+      }
+
+      const baseAmount = Math.floor(Math.random() * (250 - 50 + 1)) + 50;
+      const streakBonus = Math.min(workStreak * 5, 50);
+      const totalAmount = baseAmount + streakBonus;
+
+      userEco.cash += totalAmount;
+      userEco.lastWork = new Date(now);
+      userEco.workStreak = workStreak;
+      await userEco.save();
+
+      const embed = new EmbedBuilder()
+        .setTitle("Work Results")
+        .setDescription(`${scenario} **$${totalAmount}**!`)
+        .setColor(embedColor)
+        .addFields(
+          { name: 'Base Pay', value: `$${baseAmount}`, inline: true },
+          { name: 'Streak Bonus', value: `$${streakBonus}`, inline: true },
+          { name: 'Work Streak', value: `${workStreak} day(s)`, inline: true }
+        )
+        .setFooter({ text: `Total Cash: $${userEco.cash}` });
+
+      return await interaction.editReply({ embeds: [embed] });
+    } catch (error) {
+      console.error('Error in work command:', error);
+      return await interaction.editReply({ content: '❌ Error processing work command.' }).catch(() => {});
     }
-
-    const baseAmount = Math.floor(Math.random() * (250 - 50 + 1)) + 50;
-    const streakBonus = Math.min(workStreak * 5, 50);
-    const totalAmount = baseAmount + streakBonus;
-
-    userEco.cash += totalAmount;
-    userEco.lastWork = new Date(now);
-    userEco.workStreak = workStreak;
-    await userEco.save();
-
-    const embed = new EmbedBuilder()
-      .setTitle("Work Results")
-      .setDescription(`${scenario} **$${totalAmount}**!`)
-      .setColor(embedColor)
-      .addFields(
-        { name: 'Base Pay', value: `$${baseAmount}`, inline: true },
-        { name: 'Streak Bonus', value: `$${streakBonus}`, inline: true },
-        { name: 'Work Streak', value: `${workStreak} day(s)`, inline: true }
-      )
-      .setFooter({ text: `Total Cash: $${userEco.cash}` });
-
-    return await interaction.editReply({ embeds: [embed] });
   }
 };
