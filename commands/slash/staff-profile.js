@@ -19,6 +19,30 @@ function withTimeout(promise, fallbackValue, label) {
     .finally(() => clearTimeout(timeoutId));
 }
 
+async function safeDefer(interaction) {
+  if (interaction.deferred || interaction.replied) return;
+
+  await withTimeout(
+    interaction.deferReply(),
+    null,
+    'defer reply'
+  );
+}
+
+async function sendProfileResponse(interaction, payload) {
+  let responsePromise;
+
+  if (interaction.deferred) {
+    responsePromise = interaction.editReply(payload);
+  } else if (interaction.replied) {
+    responsePromise = interaction.followUp({ ...payload, flags: 64 });
+  } else {
+    responsePromise = interaction.reply(payload);
+  }
+
+  return withTimeout(responsePromise, null, 'profile response');
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('staff-profile')
@@ -30,7 +54,7 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    await interaction.deferReply();
+    await safeDefer(interaction);
 
     const user = interaction.options.getUser('user') || interaction.user;
     const guildId = interaction.guild.id;
@@ -72,6 +96,6 @@ module.exports = {
         .setStyle(ButtonStyle.Secondary)
     );
 
-    await interaction.editReply({ embeds: [embed], components: [buttons] });
+    await sendProfileResponse(interaction, { embeds: [embed], components: [buttons] });
   }
 };
