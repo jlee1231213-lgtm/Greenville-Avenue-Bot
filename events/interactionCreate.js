@@ -3,8 +3,18 @@ module.exports = {
     async execute(interaction, client) {
         if (!interaction.isChatInputCommand()) return;
         const command = client.commands.get(interaction.commandName);
-        if (!command) return;
-        const commandTimeoutMs = 15000;
+        if (!command || typeof command.execute !== 'function') {
+            try {
+                await interaction.reply({
+                    content: `This command is currently unavailable: /${interaction.commandName}. Please try again after the bot restarts.`,
+                    flags: 64,
+                });
+            } catch (_) {
+                // Ignore acknowledgement races.
+            }
+            return;
+        }
+        const commandTimeoutMs = 45000;
         let commandTimeoutId;
 
         const timeoutAcknowledge = setTimeout(async () => {
@@ -28,6 +38,12 @@ module.exports = {
                 Promise.resolve().then(() => command.execute(interaction)),
                 timeoutPromise,
             ]);
+
+            // Prevent Discord's "application did not respond" when a command
+            // accidentally returns without acknowledging the interaction.
+            if (!interaction.deferred && !interaction.replied) {
+                await interaction.reply({ content: 'Command completed without a response. Please try again.', flags: 64 });
+            }
         } catch (err) {
             console.error(`[ERROR] Slash command failed: /${interaction.commandName}`, err);
             try {

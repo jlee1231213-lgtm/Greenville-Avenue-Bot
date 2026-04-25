@@ -20,7 +20,7 @@ module.exports = {
 
       const selectedUser = interaction.options.getUser('user') || interaction.user;
       if (!selectedUser || !selectedUser.username) {
-        return interaction.reply({ content: 'Invalid user selected.', ephemeral: true });
+        return interaction.editReply({ content: 'Invalid user selected.' });
       }
 
       const guildId = interaction.guild.id;
