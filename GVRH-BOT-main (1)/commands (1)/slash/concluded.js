@@ -139,16 +139,20 @@ module.exports = {
             return interaction.editReply({ content: 'I could not send the concluded message. Please check my channel permissions.' });
         }
 
+        await closeConcludedSessionLogs({
+            interaction,
+            latestStartupSession,
+            startupDate,
+            now,
+            qualifiesForSessionLog,
+            host,
+        });
+
         await interaction.editReply({ content: 'Session concluded successfully.' });
 
         setImmediate(() => {
             runConcludedCleanup({
                 interaction,
-                latestStartupSession,
-                startupDate,
-                now,
-                qualifiesForSessionLog,
-                host,
                 protectedMessageIds: new Set([concludedMessage.id]),
             }).catch(error => {
                 console.error('[ERROR] /concluded background cleanup failed:', error);
@@ -159,11 +163,6 @@ module.exports = {
 
 async function runConcludedCleanup({
     interaction,
-    latestStartupSession,
-    startupDate,
-    now,
-    qualifiesForSessionLog,
-    host,
     protectedMessageIds,
 }) {
     await withTimeout(
@@ -187,29 +186,51 @@ async function runConcludedCleanup({
             activeStartupSessions.delete(sessionId);
         }
     }
+}
 
-    if (qualifiesForSessionLog && startupDate) {
-        const sessionId = latestStartupSession?.messageId
-            ? `startup-${interaction.guild.id}-${latestStartupSession.messageId}`
-            : `concluded-${interaction.guild.id}-${interaction.channel.id}-${interaction.id}`;
+async function closeConcludedSessionLogs({
+    interaction,
+    latestStartupSession,
+    startupDate,
+    now,
+    qualifiesForSessionLog,
+    host,
+}) {
+    const guildId = interaction.guild.id;
 
-        await withTimeout(
-            SessionLog.updateOne(
-                { sessionId },
-                {
-                    $set: {
-                        guildId: interaction.guild.id,
-                        sessiontype: 'session',
-                        sessionId,
-                        userId: host.id,
-                        timestarted: startupDate,
-                        timeended: now,
-                    },
-                },
-                { upsert: true }
-            ),
-            null,
-            'saving session log'
-        );
+    await withTimeout(
+        SessionLog.updateMany(
+            { guildId, sessiontype: 'cohost', timeended: null },
+            { $set: { timeended: now } }
+        ),
+        null,
+        'closing active cohost logs'
+    );
+
+    if (!qualifiesForSessionLog || !startupDate) {
+        return;
     }
+
+    const sessionId = latestStartupSession?.messageId
+        ? `startup-${guildId}-${latestStartupSession.messageId}`
+        : `concluded-${guildId}-${interaction.channel.id}-${interaction.id}`;
+
+    await withTimeout(
+        SessionLog.updateOne(
+            { sessionId },
+            {
+                $set: {
+                    guildId,
+                    sessiontype: 'session',
+                    sessionId,
+                    userId: host.id,
+                    timestarted: startupDate,
+                    timeended: now,
+                },
+            },
+            { upsert: true }
+        ),
+        null,
+        'saving hosted session log'
+    );
 }
