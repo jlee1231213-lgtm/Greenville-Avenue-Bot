@@ -2,6 +2,25 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Settings = require('../../models/settings');
 const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
+function buildHatepingsEmbed(guild, embedColor) {
+  return new EmbedBuilder()
+    .setTitle('Tired of the Pings?')
+    .setDescription(`• Simply Right-Click on this channel, (press and hold for mobile), and choose 'Mute Channel' and the appropriate duration! Any issues, please open a ticket!
+
+↳ Want to partner with Greenville Avenue? Ensure you meet our requirements & open a support ticket in order to request an alliance!`)
+    .setColor(embedColor)
+    .setImage('https://media.tenor.com/5KsAptV-UhkAAAAM/logs-mute-logs.gif')
+    .setFooter({ text: guild.name, iconURL: guild.iconURL() || undefined });
+}
+
+async function postHatepingsMessage(channel) {
+  if (!channel?.guild) return;
+  const settings = await Settings.findOne({ guildId: channel.guild.id });
+  const embedColor = settings?.embedcolor || '#ab6cc4';
+  const embed = buildHatepingsEmbed(channel.guild, embedColor);
+  await channel.send({ embeds: [embed] });
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('hatepings')
@@ -16,15 +35,9 @@ module.exports = {
       return interaction.reply({ content: 'You do not have permission to use this command.', ephemeral: true });
     }
 
-    const embed = new EmbedBuilder()
-      .setTitle('Tired of the Pings?')
-      .setDescription(`• Simply Right-Click on this channel, (press and hold for mobile), and choose 'Mute Channel' and the appropriate duration! Any issues, please open a ticket!
-
-↳ Want to partner with Greenville Avenue? Ensure you meet our requirements & open a support ticket in order to request an alliance!`)
-      .setColor(embedColor)
-      .setImage('https://media.tenor.com/5KsAptV-UhkAAAAM/logs-mute-logs.gif')
-      .setFooter({ text: interaction.guild.name, iconURL: interaction.guild.iconURL() || undefined });
+    const embed = buildHatepingsEmbed(interaction.guild, embedColor);
 
     await interaction.reply({ embeds: [embed] });
   },
+  postHatepingsMessage,
 };
