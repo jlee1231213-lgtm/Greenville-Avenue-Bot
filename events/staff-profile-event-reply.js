@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const Settings = require('../models/settings');
 const SessionLog = require('../models/sessionlog');
+const { memberHasAnyConfiguredRole } = require('../utils/roleHelpers');
 
 function withTimeout(promise, fallbackValue, label) {
   let timeoutId;
@@ -19,6 +20,32 @@ function withTimeout(promise, fallbackValue, label) {
     .finally(() => clearTimeout(timeoutId));
 }
 
+async function safeDefer(interaction) {
+  if (interaction.deferred || interaction.replied) return;
+
+  await withTimeout(
+    interaction.deferReply({ flags: 64 }),
+    null,
+    'defer reply'
+  );
+}
+
+async function sendButtonResponse(interaction, payload) {
+  let responsePromise;
+  const editPayload = { ...payload };
+  delete editPayload.flags;
+
+  if (interaction.deferred) {
+    responsePromise = interaction.editReply(editPayload);
+  } else if (interaction.replied) {
+    responsePromise = interaction.followUp({ ...payload, flags: 64 });
+  } else {
+    responsePromise = interaction.reply({ ...payload, flags: 64 });
+  }
+
+  return withTimeout(responsePromise, null, 'button response');
+}
+
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction) {
@@ -26,12 +53,9 @@ module.exports = {
 
     const [prefix, type, userId] = interaction.customId.split('_');
     if (prefix !== 'staffprofile') return;
-    if (interaction.user.id !== userId) {
-      return interaction.reply({ content: "You can't control another user's staff profile.", flags: 64 });
-    }
 
     try {
-      await interaction.deferReply({ flags: 64 });
+      await safeDefer(interaction);
 
       const guildId = interaction.guild.id;
       const settings = await withTimeout(
@@ -40,6 +64,14 @@ module.exports = {
         'settings lookup'
       );
       const embedColor = settings?.embedcolor || '#ab6cc4';
+      const isViewingSelf = interaction.user.id === userId;
+      const canViewOthers = memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId, settings?.adminRoleId);
+
+      if (!isViewingSelf && !canViewOthers) {
+        return sendButtonResponse(interaction, {
+          content: "You can't view another user's staff profile history.",
+        });
+      }
 
       if (type === 'sessions') {
         const sessions = await withTimeout(
@@ -66,7 +98,7 @@ module.exports = {
           .setDescription(description)
           .setColor(embedColor);
 
-        await interaction.editReply({ embeds: [embed] });
+        await sendButtonResponse(interaction, { embeds: [embed] });
       }
 
       if (type === 'cohost') {
@@ -94,7 +126,7 @@ module.exports = {
           .setDescription(description)
           .setColor(embedColor);
 
-        await interaction.editReply({ embeds: [embed] });
+        await sendButtonResponse(interaction, { embeds: [embed] });
       }
     } catch (error) {
       console.error('Error handling staff profile interaction:', error);

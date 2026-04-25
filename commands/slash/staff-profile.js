@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const Settings = require('../../models/settings');
 const SessionLog = require('../../models/sessionlog');
+const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 function withTimeout(promise, fallbackValue, label) {
   let timeoutId;
@@ -31,9 +32,11 @@ async function safeDefer(interaction) {
 
 async function sendProfileResponse(interaction, payload) {
   let responsePromise;
+  const editPayload = { ...payload };
+  delete editPayload.flags;
 
   if (interaction.deferred) {
-    responsePromise = interaction.editReply(payload);
+    responsePromise = interaction.editReply(editPayload);
   } else if (interaction.replied) {
     responsePromise = interaction.followUp({ ...payload, flags: 64 });
   } else {
@@ -64,6 +67,15 @@ module.exports = {
       'settings lookup'
     );
     const embedColor = settings?.embedcolor || '#ffffff';
+    const isViewingSelf = user.id === interaction.user.id;
+    const canViewOthers = memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId, settings?.adminRoleId);
+
+    if (!isViewingSelf && !canViewOthers) {
+      return sendProfileResponse(interaction, {
+        content: 'You can only view your own staff profile.',
+        flags: 64,
+      });
+    }
 
     const [sessionCount, cohostCount] = await Promise.all([
       withTimeout(
