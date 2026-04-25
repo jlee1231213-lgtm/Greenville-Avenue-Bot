@@ -7,6 +7,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const commands = [];
 function findSlashCommandsPath() {
     const candidates = [
+        path.join(__dirname, '..', 'commands', 'slash'),
         path.join(__dirname, 'commands', 'slash'),
         path.join(__dirname, 'commands (1)', 'slash'),
     ];
