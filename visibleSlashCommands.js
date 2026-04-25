@@ -14,6 +14,7 @@ const VISIBLE_SLASH_COMMANDS = new Set([
     'ban',
     'settings',
     'sendembed',
+    'quotaembed',
     'embed',
     'say',
     'staff-profile',
