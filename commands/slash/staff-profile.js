@@ -1,7 +1,4 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const Settings = require('../../models/settings');
-const SessionLog = require('../../models/sessionlog');
-const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 function withTimeout(promise, fallbackValue, label) {
   let timeoutId;
@@ -18,16 +15,6 @@ function withTimeout(promise, fallbackValue, label) {
       return fallbackValue;
     })
     .finally(() => clearTimeout(timeoutId));
-}
-
-async function safeDefer(interaction) {
-  if (interaction.deferred || interaction.replied) return;
-
-  await withTimeout(
-    interaction.deferReply(),
-    null,
-    'defer reply'
-  );
 }
 
 async function sendProfileResponse(interaction, payload) {
@@ -57,43 +44,12 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    await safeDefer(interaction);
-
     const user = interaction.options.getUser('user') || interaction.user;
-    const guildId = interaction.guild.id;
-    const settings = await withTimeout(
-      Settings.findOne({ guildId }).lean().exec(),
-      null,
-      'settings lookup'
-    );
-    const embedColor = settings?.embedcolor || '#ffffff';
-    const isViewingSelf = user.id === interaction.user.id;
-    const canViewOthers = memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId, settings?.adminRoleId);
-
-    if (!isViewingSelf && !canViewOthers) {
-      return sendProfileResponse(interaction, {
-        content: 'You can only view your own staff profile.',
-        flags: 64,
-      });
-    }
-
-    const [sessionCount, cohostCount] = await Promise.all([
-      withTimeout(
-        SessionLog.countDocuments({ guildId, userId: user.id, sessiontype: 'session' }).maxTimeMS(5000).exec(),
-        0,
-        'hosted session count'
-      ),
-      withTimeout(
-        SessionLog.countDocuments({ guildId, userId: user.id, sessiontype: 'cohost' }).maxTimeMS(5000).exec(),
-        0,
-        'cohost session count'
-      ),
-    ]);
 
     const embed = new EmbedBuilder()
       .setTitle(`Staff Profile - ${user.tag}`)
-      .setDescription(`**User:** <@${user.id}>\n**UserID**: ${user.id}\n\n**Sessions Hosted:** ${sessionCount}\n**Sessions Co-Hosted:** ${cohostCount}`)
-      .setColor(embedColor)
+      .setDescription(`**User:** <@${user.id}>\n**UserID**: ${user.id}\n\nUse the buttons below to view hosted or co-hosted session history.`)
+      .setColor('#ffffff')
       .setThumbnail(user.displayAvatarURL())
       .setFooter({ text: `${interaction.guild.name}`, iconURL: interaction.guild.iconURL() || undefined });
 
