@@ -4,7 +4,7 @@ const { memberHasAnyConfiguredRole } = require('../../utils/roleHelpers');
 
 function buildQuotaEmbed(guild, embedColor) {
   return new EmbedBuilder()
-    .setTitle('Staff Quota Entry Template')
+    .setTitle('Staff Quota Entry')
     .setDescription(`<:green_arrow_recolor:1489356754570580069> Partnership Entry
 - Staff:
 - Server Partnered With:
@@ -37,7 +37,9 @@ function buildQuotaEmbed(guild, embedColor) {
 - Main Host:
 - Proof:
 - Points Earned: +1.5
-- New Total:`)
+- New Total:
+
+__Team reminder: Please ensure you log all quota activities immediately after completion, including partnerships, hosted sessions, co-hosts, attempts, and any other eligible contributions. Accurate and timely logging is required so records stay up to date and points are counted correctly. Weekly quota is due every Sunday, so please make sure all entries are submitted before the deadline. Thank you.__`)
     .setColor(embedColor)
     .setFooter({ text: guild.name, iconURL: guild.iconURL() || undefined });
 }
