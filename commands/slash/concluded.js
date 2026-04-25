@@ -8,6 +8,24 @@ const { getConfiguredRoleIds } = require('../../utils/roleHelpers');
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
 const MIN_SESSION_LOG_DURATION_MS = 20 * 60 * 1000;
 const DEFAULT_CONCLUDED_IMAGE_URL = 'https://cdn.discordapp.com/attachments/1450473391134871565/1489434332081950841/Screenshot_20260402_214940.jpg';
+const CONCLUDED_STEP_TIMEOUT_MS = 10000;
+
+function withTimeout(promise, fallbackValue, label, timeoutMs = CONCLUDED_STEP_TIMEOUT_MS) {
+    let timeoutId;
+    const timeout = new Promise(resolve => {
+        timeoutId = setTimeout(() => {
+            console.warn(`[WARN] /concluded ${label} timed out. Continuing.`);
+            resolve(fallbackValue);
+        }, timeoutMs);
+    });
+
+    return Promise.race([promise, timeout])
+        .catch(error => {
+            console.warn(`[WARN] /concluded ${label} failed:`, error?.message || error);
+            return fallbackValue;
+        })
+        .finally(() => clearTimeout(timeoutId));
+}
 
 function normalizeDiscordMediaUrl(url) {
     if (typeof url !== 'string') return null;
@@ -69,14 +87,16 @@ function shouldLogSession(start, end) {
     return end - start >= MIN_SESSION_LOG_DURATION_MS;
 }
 
-async function purgeNonPinnedMessages(channel) {
+async function purgeNonPinnedMessages(channel, protectedMessageIds = new Set()) {
     let before;
 
     while (true) {
         const fetched = await channel.messages.fetch({ limit: 100, before }).catch(() => null);
         if (!fetched || fetched.size === 0) break;
 
-        const unpinnedMessages = [...fetched.values()].filter(message => !message.pinned);
+        const unpinnedMessages = [...fetched.values()].filter(message =>
+            !message.pinned && !protectedMessageIds.has(message.id)
+        );
         const recentMessages = unpinnedMessages.filter(message => Date.now() - message.createdTimestamp < FOURTEEN_DAYS_MS);
         const olderMessages = unpinnedMessages.filter(message => Date.now() - message.createdTimestamp >= FOURTEEN_DAYS_MS);
 
@@ -165,16 +185,24 @@ module.exports = {
                 .setRequired(true)
         ),
     async execute(interaction) {
-        await interaction.deferReply();
+        await interaction.deferReply({ flags: 64 });
 
-        const settings = await Settings.findOne({ guildId: interaction.guild.id });
+        const settings = await withTimeout(
+            Settings.findOne({ guildId: interaction.guild.id }).lean().exec(),
+            null,
+            'settings lookup'
+        );
         const embedColor = settings?.embedcolor || '#ab6cc4';
         const imageUrl = resolveConcludedImageUrl(settings);
         const host = interaction.user;
-        const latestStartupSession = await StartupSession.findOne({
-            guildId: interaction.guild.id,
-            channelId: interaction.channel.id,
-        }).sort({ createdAt: -1 });
+        const latestStartupSession = await withTimeout(
+            StartupSession.findOne({
+                guildId: interaction.guild.id,
+                channelId: interaction.channel.id,
+            }).sort({ createdAt: -1 }).lean().exec(),
+            null,
+            'startup session lookup'
+        );
         const startupDate = latestStartupSession?.createdAt ? new Date(latestStartupSession.createdAt) : null;
         const now = new Date();
         const qualifiesForSessionLog = shouldLogSession(startupDate, now);
@@ -182,18 +210,6 @@ module.exports = {
         const endTime = formatDiscordTimestamp(now);
         const duration = startupDate ? formatDuration(startupDate, now) : 'Unknown';
         const notes = interaction.options.getString('notes', true);
-        await purgeNonPinnedMessages(interaction.channel);
-
-        await StartupSession.deleteMany({
-            guildId: interaction.guild.id,
-            channelId: interaction.channel.id,
-        }).catch(() => {});
-
-        for (const [sessionId, data] of activeStartupSessions.entries()) {
-            if (data?.type === 'session' || data?.type === 'cohost') {
-                activeStartupSessions.delete(sessionId);
-            }
-        }
 
         const embed = new EmbedBuilder()
             .setColor(embedColor)
@@ -213,14 +229,78 @@ module.exports = {
             embed.setImage(imageUrl);
         }
 
-        await interaction.editReply({ embeds: [embed] });
+        const concludedMessage = await withTimeout(
+            interaction.channel.send({ embeds: [embed] }),
+            null,
+            'sending concluded message'
+        );
+
+        if (!concludedMessage) {
+            return interaction.editReply({ content: 'I could not send the concluded message. Please check my channel permissions.' });
+        }
+
+        await interaction.editReply({ content: 'Session concluded successfully.' });
+
+        setImmediate(() => {
+            runConcludedCleanup({
+                interaction,
+                settings,
+                latestStartupSession,
+                startupDate,
+                now,
+                duration,
+                qualifiesForSessionLog,
+                notes,
+                host,
+                protectedMessageIds: new Set([concludedMessage.id]),
+            }).catch(error => {
+                console.error('[ERROR] /concluded background cleanup failed:', error);
+            });
+        });
+    },
+};
+
+async function runConcludedCleanup({
+    interaction,
+    settings,
+    latestStartupSession,
+    startupDate,
+    now,
+    duration,
+    qualifiesForSessionLog,
+    notes,
+    host,
+    protectedMessageIds,
+}) {
+        await withTimeout(
+            purgeNonPinnedMessages(interaction.channel, protectedMessageIds),
+            null,
+            'purging old messages',
+            15000
+        );
+
+        await withTimeout(
+            StartupSession.deleteMany({
+                guildId: interaction.guild.id,
+                channelId: interaction.channel.id,
+            }),
+            null,
+            'deleting startup sessions'
+        );
+
+        for (const [sessionId, data] of activeStartupSessions.entries()) {
+            if (data?.type === 'session' || data?.type === 'cohost') {
+                activeStartupSessions.delete(sessionId);
+            }
+        }
 
         if (qualifiesForSessionLog && startupDate) {
             const sessionId = latestStartupSession?.messageId
                 ? `startup-${interaction.guild.id}-${latestStartupSession.messageId}`
                 : `concluded-${interaction.guild.id}-${interaction.channel.id}-${interaction.id}`;
 
-            await SessionLog.updateOne(
+            await withTimeout(
+                SessionLog.updateOne(
                 { sessionId },
                 {
                     $setOnInsert: {
@@ -233,10 +313,13 @@ module.exports = {
                     },
                 },
                 { upsert: true }
-            ).catch(() => {});
+                ),
+                null,
+                'saving session log'
+            );
         }
 
-        await sendCommandLog({
+        await withTimeout(sendCommandLog({
             interaction,
             settings,
             title: 'Concluded Command Executed',
@@ -246,8 +329,12 @@ module.exports = {
                 { name: 'Logged', value: qualifiesForSessionLog ? 'Yes (20m+)' : 'No (<20m)', inline: true },
                 { name: 'Notes', value: notes.length > 250 ? `${notes.slice(0, 247)}...` : notes },
             ],
-        });
+        }), null, 'sending command log');
 
-        await logAdvancedQuotaStatus(interaction, settings);
-    },
-};
+        await withTimeout(
+            logAdvancedQuotaStatus(interaction, settings),
+            null,
+            'logging quota status',
+            15000
+        );
+}

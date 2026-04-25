@@ -4,6 +4,24 @@ const StartupSession = require('../../models/startupsession');
 const { activeStartupSessions } = require('./startup');
 const { normalizeEmbedMediaUrl } = require('../../utils/embedMedia');
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+const CONCLUDED_STEP_TIMEOUT_MS = 10000;
+
+function withTimeout(promise, fallbackValue, label, timeoutMs = CONCLUDED_STEP_TIMEOUT_MS) {
+    let timeoutId;
+    const timeout = new Promise(resolve => {
+        timeoutId = setTimeout(() => {
+            console.warn(`[WARN] /concluded ${label} timed out. Continuing.`);
+            resolve(fallbackValue);
+        }, timeoutMs);
+    });
+
+    return Promise.race([promise, timeout])
+        .catch(error => {
+            console.warn(`[WARN] /concluded ${label} failed:`, error?.message || error);
+            return fallbackValue;
+        })
+        .finally(() => clearTimeout(timeoutId));
+}
 
 function formatDiscordTimestamp(date) {
     return `<t:${Math.floor(date.getTime() / 1000)}:f>`;
@@ -20,14 +38,16 @@ function formatDuration(start, end) {
     return `${minutes}m`;
 }
 
-async function purgeNonPinnedMessages(channel) {
+async function purgeNonPinnedMessages(channel, protectedMessageIds = new Set()) {
     let before;
 
     while (true) {
         const fetched = await channel.messages.fetch({ limit: 100, before }).catch(() => null);
         if (!fetched || fetched.size === 0) break;
 
-        const unpinnedMessages = [...fetched.values()].filter(message => !message.pinned);
+        const unpinnedMessages = [...fetched.values()].filter(message =>
+            !message.pinned && !protectedMessageIds.has(message.id)
+        );
         const recentMessages = unpinnedMessages.filter(message => Date.now() - message.createdTimestamp < FOURTEEN_DAYS_MS);
         const olderMessages = unpinnedMessages.filter(message => Date.now() - message.createdTimestamp >= FOURTEEN_DAYS_MS);
 
@@ -57,32 +77,30 @@ module.exports = {
                 .setRequired(true)
         ),
     async execute(interaction) {
-        const settings = await Settings.findOne({ guildId: interaction.guild.id });
+        await interaction.deferReply({ flags: 64 });
+
+        const settings = await withTimeout(
+            Settings.findOne({ guildId: interaction.guild.id }).lean().exec(),
+            null,
+            'settings lookup'
+        );
         const embedColor = settings?.embedcolor || '#ab6cc4';
         const imageUrl = normalizeEmbedMediaUrl('https://media.discordapp.net/attachments/1450473391134871565/1492956124092039329/Screenshot_20260402_214940.jpg?ex=69dd373d&is=69dbe5bd&hm=9b392661e3f7da0bd7a522875f0d5adccf36e613e5d6f834fc04c81ffdb977b3&=&format=webp&width=2160&height=1046');
         const host = interaction.user;
-        const latestStartupSession = await StartupSession.findOne({
-            guildId: interaction.guild.id,
-            channelId: interaction.channel.id,
-        }).sort({ createdAt: -1 });
+        const latestStartupSession = await withTimeout(
+            StartupSession.findOne({
+                guildId: interaction.guild.id,
+                channelId: interaction.channel.id,
+            }).sort({ createdAt: -1 }).lean().exec(),
+            null,
+            'startup session lookup'
+        );
         const startupDate = latestStartupSession?.createdAt ? new Date(latestStartupSession.createdAt) : null;
         const now = new Date();
         const startTime = startupDate ? formatDiscordTimestamp(startupDate) : 'Unknown';
         const endTime = formatDiscordTimestamp(now);
         const duration = startupDate ? formatDuration(startupDate, now) : 'Unknown';
         const notes = interaction.options.getString('notes', true);
-        await purgeNonPinnedMessages(interaction.channel);
-
-        await StartupSession.deleteMany({
-            guildId: interaction.guild.id,
-            channelId: interaction.channel.id,
-        }).catch(() => {});
-
-        for (const [sessionId, data] of activeStartupSessions.entries()) {
-            if (data?.type === 'session' || data?.type === 'cohost') {
-                activeStartupSessions.delete(sessionId);
-            }
-        }
 
         const embed = new EmbedBuilder()
             .setColor(embedColor)
@@ -102,6 +120,49 @@ module.exports = {
             embed.setImage(imageUrl);
         }
 
-        await interaction.reply({ embeds: [embed] });
+        const concludedMessage = await withTimeout(
+            interaction.channel.send({ embeds: [embed] }),
+            null,
+            'sending concluded message'
+        );
+
+        if (!concludedMessage) {
+            return interaction.editReply({ content: 'I could not send the concluded message. Please check my channel permissions.' });
+        }
+
+        await interaction.editReply({ content: 'Session concluded successfully.' });
+
+        setImmediate(() => {
+            runConcludedCleanup({
+                interaction,
+                protectedMessageIds: new Set([concludedMessage.id]),
+            }).catch(error => {
+                console.error('[ERROR] /concluded background cleanup failed:', error);
+            });
+        });
     },
 };
+
+async function runConcludedCleanup({ interaction, protectedMessageIds }) {
+    await withTimeout(
+        purgeNonPinnedMessages(interaction.channel, protectedMessageIds),
+        null,
+        'purging old messages',
+        15000
+    );
+
+    await withTimeout(
+        StartupSession.deleteMany({
+            guildId: interaction.guild.id,
+            channelId: interaction.channel.id,
+        }),
+        null,
+        'deleting startup sessions'
+    );
+
+    for (const [sessionId, data] of activeStartupSessions.entries()) {
+        if (data?.type === 'session' || data?.type === 'cohost') {
+            activeStartupSessions.delete(sessionId);
+        }
+    }
+}
