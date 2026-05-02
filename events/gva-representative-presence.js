@@ -84,7 +84,7 @@ module.exports = {
                 .setTitle('<a:blue_heartburst:1493951094605353062>   Server Representative <a:blue_heartburst:1493951094605353062>')
                 .setDescription(`<:gvry_ydot:1489356230785761382>  Thank You ${member} for supporting & being a proud representative of our server, Greenville Avenue™! You have been given the <@&${REPRESENTATIVE_ROLE_ID}> , which allows you to gain simple perks around the community!  
 If you would like to receive these perks too, simply set your profile status as /gva, and you will be automatically roled by our bot!`)
-                .setColor(0x2F80ED);
+                .setColor(0x569E03);
 
             await channel.send({
                 embeds: [embed],
