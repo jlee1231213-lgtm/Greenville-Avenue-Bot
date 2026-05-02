@@ -1,6 +1,7 @@
 const { ActivityType, PermissionFlagsBits } = require('discord.js');
 
 const REPRESENTATIVE_ROLE_ID = '1443224410294063170';
+const ANNOUNCEMENT_CHANNEL_ID = '1443224412089483330';
 const STATUS_TRIGGERS = ['/gva', '/gvavenue'];
 
 function getPresenceText(presence) {
@@ -17,11 +18,8 @@ function hasRepresentativeStatus(presence) {
 }
 
 async function findAnnouncementChannel(guild) {
-    const configuredChannelId = process.env.GVA_REP_ANNOUNCE_CHANNEL_ID?.trim();
-    if (configuredChannelId) {
-        const configuredChannel = await guild.channels.fetch(configuredChannelId).catch(() => null);
-        if (configuredChannel?.isTextBased()) return configuredChannel;
-    }
+    const representativeChannel = await guild.channels.fetch(ANNOUNCEMENT_CHANNEL_ID).catch(() => null);
+    if (representativeChannel?.isTextBased()) return representativeChannel;
 
     if (guild.systemChannel?.isTextBased()) return guild.systemChannel;
 
