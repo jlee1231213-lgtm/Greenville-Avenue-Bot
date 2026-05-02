@@ -1,4 +1,4 @@
-const { ActivityType, PermissionFlagsBits } = require('discord.js');
+const { ActivityType, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 
 const REPRESENTATIVE_ROLE_ID = '1443224410294063170';
 const ANNOUNCEMENT_CHANNEL_ID = '1443224412089483330';
@@ -32,11 +32,15 @@ async function findAnnouncementChannel(guild) {
 module.exports = {
     name: 'presenceUpdate',
     async execute(oldPresence, newPresence) {
-        if (!newPresence?.guild || !hasRepresentativeStatus(newPresence)) return;
+        if (!newPresence?.guild) return;
+
+        const hadRepresentativeStatus = oldPresence ? hasRepresentativeStatus(oldPresence) : false;
+        const hasStatusNow = hasRepresentativeStatus(newPresence);
+        if (!hadRepresentativeStatus && !hasStatusNow) return;
 
         const guild = newPresence.guild;
         const member = await guild.members.fetch(newPresence.userId).catch(() => null);
-        if (!member || member.user.bot || member.roles.cache.has(REPRESENTATIVE_ROLE_ID)) return;
+        if (!member || member.user.bot) return;
 
         const role = guild.roles.cache.get(REPRESENTATIVE_ROLE_ID)
             || await guild.roles.fetch(REPRESENTATIVE_ROLE_ID).catch(() => null);
@@ -46,11 +50,27 @@ module.exports = {
             return;
         }
 
-        try {
-            await member.roles.add(role, 'Member has /gva or /gvavenue in their custom status');
-        } catch (error) {
-            console.error(`[ERROR] Could not give GVA representative role to ${member.user.tag}:`, error);
+        if (hadRepresentativeStatus && !hasStatusNow) {
+            if (member.roles.cache.has(REPRESENTATIVE_ROLE_ID)) {
+                try {
+                    await member.roles.remove(role, 'Member removed /gva or /gvavenue from their custom status');
+                } catch (error) {
+                    console.error(`[ERROR] Could not remove GVA representative role from ${member.user.tag}:`, error);
+                }
+            }
+
             return;
+        }
+
+        if (hadRepresentativeStatus) return;
+
+        if (!member.roles.cache.has(REPRESENTATIVE_ROLE_ID)) {
+            try {
+                await member.roles.add(role, 'Member has /gva or /gvavenue in their custom status');
+            } catch (error) {
+                console.error(`[ERROR] Could not give GVA representative role to ${member.user.tag}:`, error);
+                return;
+            }
         }
 
         const channel = await findAnnouncementChannel(guild);
@@ -60,11 +80,14 @@ module.exports = {
         }
 
         try {
-            await channel.send({
-                content: `> <a:blue_heartburst:1493951094605353062>   Server Representative <a:blue_heartburst:1493951094605353062> 
+            const embed = new EmbedBuilder()
+                .setTitle('<a:blue_heartburst:1493951094605353062>   Server Representative <a:blue_heartburst:1493951094605353062>')
+                .setDescription(`<:gvry_ydot:1489356230785761382>  Thank You ${member} for supporting & being a proud representative of our server, Greenville Avenue™! You have been given the <@&${REPRESENTATIVE_ROLE_ID}> , which allows you to gain simple perks around the community!  
+If you would like to receive these perks too, simply set your profile status as /gva, and you will be automatically roled by our bot!`)
+                .setColor(0x2F80ED);
 
-<:gvry_ydot:1489356230785761382>  Thank You ${member} for supporting & being a proud representative of our server, Greenville Avenue™! You have been given the <@&${REPRESENTATIVE_ROLE_ID}> , which allows you to gain simple perks around the community!  
-If you would like to receive these perks too, simply set your profile status as /gva, and you will be automatically roled by our bot!`,
+            await channel.send({
+                embeds: [embed],
                 allowedMentions: {
                     users: [member.id],
                     roles: [REPRESENTATIVE_ROLE_ID],
