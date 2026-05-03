@@ -9,12 +9,14 @@ commands/
     botinfo.js
     cohost-end.js
     cohost.js
+    collect.js
     concluded.js
     deposit.js
     ea.js
     embed.js
     end.js
     give-money.js
+    leaderboard.js
     panic.js
     payticket.js
     pingtest.js

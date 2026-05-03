@@ -26,6 +26,8 @@ const VISIBLE_SLASH_COMMANDS = new Set([
     'withdraw',
     'rob',
     'slut',
+    'leaderboard',
+    'collect',
 ]);
 
 function isVisibleSlashCommand(commandName) {
