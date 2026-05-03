@@ -25,26 +25,23 @@ function formatCooldown(milliseconds) {
   return `${minutes}m ${seconds}s`;
 }
 
-function getCollectTier(member, settings) {
+function getCollectPayouts(member, settings) {
   const memberRoleNames = new Set(
     member.roles.cache.map(role => normalizeRoleName(role.name))
   );
+  const payouts = [];
 
   for (const tier of PAY_TIERS) {
     if (tier.roleNames.some(roleName => memberRoleNames.has(roleName))) {
-      return tier;
+      payouts.push(tier);
     }
   }
 
-  if (memberHasAnyConfiguredRole(member, settings?.civiRoleId)) {
-    return { label: 'Civilian', amount: 500 };
+  if (memberHasAnyConfiguredRole(member, settings?.civiRoleId) || memberRoleNames.has('civilian')) {
+    payouts.push({ label: 'Civilian', amount: 500 });
   }
 
-  if (memberRoleNames.has('civilian')) {
-    return { label: 'Civilian', amount: 500 };
-  }
-
-  return null;
+  return payouts;
 }
 
 module.exports = {
@@ -59,9 +56,9 @@ module.exports = {
       const { guild, member, user } = interaction;
       const settings = await Settings.findOne({ guildId: guild.id });
       const embedColor = settings?.embedcolor || '#ff9933';
-      const tier = getCollectTier(member, settings);
+      const payouts = getCollectPayouts(member, settings);
 
-      if (!tier) {
+      if (payouts.length === 0) {
         return interaction.editReply({
           embeds: [
             new EmbedBuilder()
@@ -70,6 +67,11 @@ module.exports = {
           ]
         });
       }
+
+      const totalAmount = payouts.reduce((sum, payout) => sum + payout.amount, 0);
+      const payoutLines = payouts
+        .map(payout => `${payout.label}: **$${payout.amount.toLocaleString()}**`)
+        .join('\n');
 
       let userEco = await Eco.findOne({ userId: user.id });
       if (!userEco) userEco = new Eco({ userId: user.id });
@@ -87,14 +89,14 @@ module.exports = {
         });
       }
 
-      userEco.cash += tier.amount;
+      userEco.cash += totalAmount;
       userEco.lastDaily = new Date(now);
       await userEco.save();
 
       const embed = new EmbedBuilder()
         .setTitle('Money Collected')
         .setColor(embedColor)
-        .setDescription(`You collected **$${tier.amount.toLocaleString()}** for **${tier.label}**.`)
+        .setDescription(`You collected **$${totalAmount.toLocaleString()}** total.\n\n${payoutLines}`)
         .setFooter({ text: `Total Cash: $${userEco.cash.toLocaleString()}` });
 
       return interaction.editReply({ embeds: [embed] });
