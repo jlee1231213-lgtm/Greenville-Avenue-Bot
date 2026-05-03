@@ -25,23 +25,22 @@ function formatCooldown(milliseconds) {
   return `${minutes}m ${seconds}s`;
 }
 
-function getCollectPayouts(member, settings) {
+function getCollectTier(member, settings) {
   const memberRoleNames = new Set(
     member.roles.cache.map(role => normalizeRoleName(role.name))
   );
-  const payouts = [];
 
   for (const tier of PAY_TIERS) {
     if (tier.roleNames.some(roleName => memberRoleNames.has(roleName))) {
-      payouts.push(tier);
+      return tier;
     }
   }
 
   if (memberHasAnyConfiguredRole(member, settings?.civiRoleId) || memberRoleNames.has('civilian')) {
-    payouts.push({ label: 'Civilian', amount: 500 });
+    return { label: 'Civilian', amount: 500 };
   }
 
-  return payouts;
+  return null;
 }
 
 module.exports = {
@@ -56,9 +55,9 @@ module.exports = {
       const { guild, member, user } = interaction;
       const settings = await Settings.findOne({ guildId: guild.id });
       const embedColor = settings?.embedcolor || '#ff9933';
-      const payouts = getCollectPayouts(member, settings);
+      const tier = getCollectTier(member, settings);
 
-      if (payouts.length === 0) {
+      if (!tier) {
         return interaction.editReply({
           embeds: [
             new EmbedBuilder()
@@ -68,35 +67,30 @@ module.exports = {
         });
       }
 
-      const totalAmount = payouts.reduce((sum, payout) => sum + payout.amount, 0);
-      const payoutLines = payouts
-        .map(payout => `${payout.label}: **$${payout.amount.toLocaleString()}**`)
-        .join('\n');
-
       let userEco = await Eco.findOne({ userId: user.id });
       if (!userEco) userEco = new Eco({ userId: user.id });
 
       const now = Date.now();
-      const lastDailyAt = userEco.lastDaily ? new Date(userEco.lastDaily).getTime() : null;
+      const lastCollectAt = userEco.lastCollect ? new Date(userEco.lastCollect).getTime() : null;
 
-      if (lastDailyAt && now - lastDailyAt < COLLECT_COOLDOWN) {
+      if (lastCollectAt && now - lastCollectAt < COLLECT_COOLDOWN) {
         return interaction.editReply({
           embeds: [
             new EmbedBuilder()
               .setColor(embedColor)
-              .setDescription(`You need to wait **${formatCooldown(COLLECT_COOLDOWN - (now - lastDailyAt))}** before collecting again.`)
+              .setDescription(`You need to wait **${formatCooldown(COLLECT_COOLDOWN - (now - lastCollectAt))}** before collecting again.`)
           ]
         });
       }
 
-      userEco.cash += totalAmount;
-      userEco.lastDaily = new Date(now);
+      userEco.cash += tier.amount;
+      userEco.lastCollect = new Date(now);
       await userEco.save();
 
       const embed = new EmbedBuilder()
         .setTitle('Money Collected')
         .setColor(embedColor)
-        .setDescription(`You collected **$${totalAmount.toLocaleString()}** total.\n\n${payoutLines}`)
+        .setDescription(`You collected **$${tier.amount.toLocaleString()}** for **${tier.label}**.`)
         .setFooter({ text: `Total Cash: $${userEco.cash.toLocaleString()}` });
 
       return interaction.editReply({ embeds: [embed] });

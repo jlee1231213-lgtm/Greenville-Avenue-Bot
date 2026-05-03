@@ -17,6 +17,9 @@ const ecoSchema = new mongoose.Schema({
     lastDaily: { 
         type: Date 
     },
+    lastCollect: {
+        type: Date
+    },
     lastWork: {
         type: Date
     },
