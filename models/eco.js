@@ -20,6 +20,12 @@ const ecoSchema = new mongoose.Schema({
     lastWork: {
         type: Date
     },
+    lastRob: {
+        type: Date
+    },
+    lastSlut: {
+        type: Date
+    },
     workStreak: {
         type: Number,
         default: 0

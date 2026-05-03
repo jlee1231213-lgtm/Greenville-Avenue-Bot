@@ -22,11 +22,13 @@ commands/
     register.js
     reinvites.js
     release.js
+    rob.js
     role.js
     say.js
     sendembed.js
     settings.js
     setup.js
+    slut.js
     staff-profile.js
     startup.js
     ticket.js
