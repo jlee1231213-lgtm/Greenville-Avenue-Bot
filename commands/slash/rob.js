@@ -12,6 +12,14 @@ function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+async function findOrCreateEco(userId) {
+  return Eco.findOneAndUpdate(
+    { userId },
+    { $setOnInsert: { userId } },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  );
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('rob')
@@ -53,8 +61,7 @@ module.exports = {
       const cooldownTime = 60 * 60 * 1000;
       const now = Date.now();
 
-      let robberEco = await Eco.findOne({ userId: user.id });
-      if (!robberEco) robberEco = new Eco({ userId: user.id });
+      const robberEco = await findOrCreateEco(user.id);
 
       const lastRobAt = robberEco.lastRob ? new Date(robberEco.lastRob).getTime() : null;
       if (lastRobAt && now - lastRobAt < cooldownTime) {
@@ -67,26 +74,28 @@ module.exports = {
         });
       }
 
-      let targetEco = await Eco.findOne({ userId: targetUser.id });
-      if (!targetEco) targetEco = new Eco({ userId: targetUser.id });
+      const targetEco = await findOrCreateEco(targetUser.id);
 
+      const minSteal = 25;
       const targetCash = Number(targetEco.cash) || 0;
-      if (targetCash < 100) {
+      if (targetCash < minSteal) {
         return interaction.editReply({
           embeds: [
             new EmbedBuilder()
               .setColor(embedColor)
-              .setDescription(`${targetUser} does not have enough cash to rob.`)
+              .setDescription(`${targetUser} needs at least **$${minSteal.toLocaleString()}** cash to rob.`)
           ]
         });
       }
 
       const success = Math.random() < 0.45;
       robberEco.lastRob = new Date(now);
+      robberEco.cash = Number(robberEco.cash) || 0;
+      targetEco.cash = targetCash;
 
       if (success) {
-        const maxSteal = Math.min(500, Math.max(25, Math.floor(targetCash * 0.45)));
-        const amount = randomInt(25, maxSteal);
+        const maxSteal = Math.min(targetCash, 500, Math.max(minSteal, Math.floor(targetCash * 0.45)));
+        const amount = randomInt(minSteal, maxSteal);
 
         targetEco.cash -= amount;
         robberEco.cash += amount;
