@@ -4,6 +4,19 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const Eco = require('../../models/eco');
 const Settings = require('../../models/settings');
 
+const DB_TIMEOUT_MS = 8000;
+
+function withTimeout(promise, label, timeoutMs = DB_TIMEOUT_MS) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('work')
@@ -21,7 +34,10 @@ module.exports = {
 
       let settings;
       try {
-        settings = await Settings.findOne({ guildId: guild.id });
+        settings = await withTimeout(
+          Settings.findOne({ guildId: guild.id }).lean().exec(),
+          'Fetching /work settings'
+        );
       } catch (err) {
         console.error("Error fetching settings:", err);
         return await interaction.editReply({ content: '❌ Error fetching settings from database.' });
@@ -87,7 +103,10 @@ module.exports = {
 
       const scenario = workScenarios[Math.floor(Math.random() * workScenarios.length)];
 
-      let userEco = await Eco.findOne({ userId: user.id });
+      let userEco = await withTimeout(
+        Eco.findOne({ userId: user.id }),
+        'Fetching /work economy profile'
+      );
       if (!userEco) {
         userEco = new Eco({ userId: user.id });
       }
@@ -134,7 +153,7 @@ module.exports = {
       userEco.cash += totalAmount;
       userEco.lastWork = new Date(now);
       userEco.workStreak = workStreak;
-      await userEco.save();
+      await withTimeout(userEco.save(), 'Saving /work economy profile');
 
       const embed = new EmbedBuilder()
         .setTitle("Work Results")
@@ -150,7 +169,12 @@ module.exports = {
       return await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error('Error in work command:', error);
-      return await interaction.editReply({ content: '❌ Error processing work command.' }).catch(() => {});
+      const isTimeout = error?.message?.includes('timed out');
+      return await interaction.editReply({
+        content: isTimeout
+          ? '❌ The database took too long to respond. Please try `/work` again in a moment.'
+          : '❌ Error processing work command.'
+      }).catch(() => {});
     }
   }
 };
