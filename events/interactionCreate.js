@@ -43,7 +43,10 @@ module.exports = {
         const timeoutAcknowledge = setTimeout(async () => {
             if (!interaction.deferred && !interaction.replied) {
                 try {
-                    await interaction.deferReply({ flags: 64 });
+                    await interaction.reply({
+                        content: `Working on /${interaction.commandName}...`,
+                        flags: 64,
+                    });
                 } catch (_) {
                     // Ignore acknowledge race conditions.
                 }

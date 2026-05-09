@@ -18,7 +18,7 @@ module.exports = {
     .setDescription('Take a risky job to earn cash.'),
 
   async execute(interaction) {
-    await interaction.deferReply();
+    await interaction.reply({ content: `Working on /${interaction.commandName}...` });
 
     try {
       const { guild, user } = interaction;

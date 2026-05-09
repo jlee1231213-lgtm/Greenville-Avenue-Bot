@@ -185,7 +185,7 @@ module.exports = {
                 .setRequired(true)
         ),
     async execute(interaction) {
-        await interaction.deferReply({ flags: 64 });
+        await interaction.reply({ content: `Working on /${interaction.commandName}...`, flags: 64 });
 
         const settings = await withTimeout(
             Settings.findOne({ guildId: interaction.guild.id }).lean().exec(),

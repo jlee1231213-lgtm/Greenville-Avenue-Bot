@@ -66,7 +66,7 @@ module.exports = {
     const settings = await Settings.findOne({ guildId: interaction.guild.id });
     const embedColor = settings?.embedcolor || '#7545B0';
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.reply({ content: `Working on /${interaction.commandName}...`, ephemeral: true });
 
     if (!bypassPerms && !memberHasAnyConfiguredRole(interaction.member, settings?.staffRoleId)) {
       return interaction.editReply({

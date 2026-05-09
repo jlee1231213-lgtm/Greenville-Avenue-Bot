@@ -16,7 +16,7 @@ module.exports = {
 
   async execute(interaction) {
     try {
-      await interaction.deferReply({ ephemeral: false });
+      await interaction.reply({ content: `Working on /${interaction.commandName}...`, ephemeral: false });
 
       const selectedUser = interaction.options.getUser('user') || interaction.user;
       if (!selectedUser || !selectedUser.username) {

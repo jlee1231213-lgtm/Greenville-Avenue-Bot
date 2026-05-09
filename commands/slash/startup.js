@@ -67,7 +67,7 @@ module.exports = {
 
   async execute(interaction) {
     const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.reply({ content: `Working on /${interaction.commandName}...`, ephemeral: true });
 
     try {
       if (!interaction.inGuild()) {

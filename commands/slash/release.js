@@ -83,7 +83,7 @@ module.exports = {
       });
     }
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.reply({ content: `Working on /${interaction.commandName}...`, ephemeral: true });
 
 
     const sessionLink = interaction.options.getString('link');

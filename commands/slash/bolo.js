@@ -34,7 +34,7 @@ module.exports = {
         )),
 
   async execute(interaction) {
-    await interaction.deferReply({ flags: 64 });
+    await interaction.reply({ content: `Working on /${interaction.commandName}...`, flags: 64 });
 
     const settings = await Settings.findOne({ guildId: interaction.guild.id });
     const embedColor = settings?.embedcolor || '#ff7f25';

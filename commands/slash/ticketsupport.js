@@ -25,7 +25,7 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageChannels)
     .setDescription('Open a ticket support dropdown.'),
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.reply({ content: 'Sending the support ticket options...', ephemeral: true });
 
     const channelid = `${interaction.channel.id}`
     const settings = await Settings.findOne({ guildId: interaction.guild.id });

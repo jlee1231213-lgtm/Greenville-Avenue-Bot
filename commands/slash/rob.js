@@ -30,7 +30,7 @@ module.exports = {
         .setRequired(true)),
 
   async execute(interaction) {
-    await interaction.deferReply();
+    await interaction.reply({ content: `Working on /${interaction.commandName}...` });
 
     try {
       const { guild, user } = interaction;

@@ -10,7 +10,7 @@ module.exports = {
                 .setRequired(false)),
     async execute(interaction) {
         try {
-            await interaction.deferReply({ ephemeral: false });
+            await interaction.reply({ content: `Working on /${interaction.commandName}...`, ephemeral: false });
 
             const targetUser = interaction.options.getUser('user') || interaction.user;
 

@@ -52,7 +52,7 @@ module.exports = {
                 .setRequired(false)),
 
     async execute(interaction) {
-        await interaction.deferReply({ flags: 64 });
+        await interaction.reply({ content: `Working on /${interaction.commandName}...`, flags: 64 });
 
         const title = interaction.options.getString('title', true);
         const description = interaction.options.getString('description', true);

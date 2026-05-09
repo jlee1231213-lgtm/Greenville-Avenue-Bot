@@ -31,7 +31,7 @@ module.exports = {
       });
     }
 
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: `Working on /${interaction.commandName}...`, flags: MessageFlags.Ephemeral });
     const userId = interaction.user.id;
     const timestamp = new Date();
     const sessionId = uuidv4();

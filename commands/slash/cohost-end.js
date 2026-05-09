@@ -17,7 +17,7 @@ module.exports = {
     const embedColor = settings?.embedcolor || '#ab6cc4';
     // Role checks removed: anyone can use this command
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.reply({ content: `Working on /${interaction.commandName}...`, ephemeral: true });
     const userId = interaction.user.id;
     const note = interaction.options.getString('notes') || 'No notes provided';
 

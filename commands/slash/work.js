@@ -14,7 +14,7 @@ module.exports = {
       user: interaction.user?.id,
       guild: interaction.guild?.id
     });
-    await interaction.deferReply();
+    await interaction.reply({ content: `Working on /${interaction.commandName}...` });
 
     try {
       const { guild, user } = interaction;

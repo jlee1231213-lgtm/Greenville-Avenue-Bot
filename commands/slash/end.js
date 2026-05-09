@@ -41,7 +41,7 @@ module.exports = {
         }
       }
 
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.reply({ content: `Working on /${interaction.commandName}...`, ephemeral: true });
 
       const userId = interaction.user.id;
       const note = interaction.options.getString('notes');

@@ -18,7 +18,7 @@ module.exports = {
     const guildId = interaction.guild.id;
     const ticketId = interaction.options.getString('ticket');
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.reply({ content: `Working on /${interaction.commandName}...`, ephemeral: true });
 
     const settings = await Settings.findOne({ guildId });
     const embedColor = settings?.embedcolor || '#ffffff';

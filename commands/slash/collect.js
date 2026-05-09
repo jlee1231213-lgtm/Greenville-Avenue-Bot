@@ -49,7 +49,7 @@ module.exports = {
     .setDescription('Collect your daily role payout.'),
 
   async execute(interaction) {
-    await interaction.deferReply();
+    await interaction.reply({ content: `Working on /${interaction.commandName}...` });
 
     try {
       const { guild, member, user } = interaction;

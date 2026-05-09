@@ -62,7 +62,7 @@ module.exports = {
       });
     }
 
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: `Working on /${interaction.commandName}...`, flags: MessageFlags.Ephemeral });
 
     const sessionLink = interaction.options.getString('link');
     const userMention = `<@${interaction.user.id}>`;

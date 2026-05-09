@@ -17,7 +17,7 @@ module.exports = {
     .setDescription('View the richest users by total money.'),
 
   async execute(interaction) {
-    await interaction.deferReply();
+    await interaction.reply({ content: `Working on /${interaction.commandName}...` });
 
     try {
       const settings = await Settings.findOne({ guildId: interaction.guild.id });

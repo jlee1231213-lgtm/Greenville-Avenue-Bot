@@ -7,7 +7,7 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            await interaction.deferReply({ flags: 64 });
+            await interaction.reply({ content: `Working on /${interaction.commandName}...`, flags: 64 });
 
             const sent = await interaction.fetchReply();
             const ping = sent.createdTimestamp - interaction.createdTimestamp;

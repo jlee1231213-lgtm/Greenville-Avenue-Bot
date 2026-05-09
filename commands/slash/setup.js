@@ -13,7 +13,7 @@ module.exports = {
     .setDescription('Post the setup notice'),
   async execute(interaction) {
     try {
-      await interaction.deferReply();
+      await interaction.reply({ content: `Working on /${interaction.commandName}...` });
 
       const bypassPerms = process.env.TESTING_BYPASS_PERMS === 'true';
       let settings = await Settings.findOne({ guildId: interaction.guild.id });

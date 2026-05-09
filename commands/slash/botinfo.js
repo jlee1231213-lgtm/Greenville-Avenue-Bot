@@ -8,7 +8,7 @@ module.exports = {
 
     async execute(interaction) {
         try {
-            await interaction.deferReply();
+            await interaction.reply({ content: `Working on /${interaction.commandName}...` });
 
             const sent = await interaction.fetchReply();
             const ping = sent.createdTimestamp - interaction.createdTimestamp;
